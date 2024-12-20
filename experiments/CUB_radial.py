@@ -50,7 +50,7 @@ out = dendrogram(
     color_threshold=smallest_t,
     no_plot=True,
 )
-rt.plot(out, figsize=(15, 15))
+rt.plot(out, figsize=(15, 15), pallete="Set1")
 plt.savefig(PLOTS_PATH + "labeled.pdf", dpi=400)
 
 out = dendrogram(
