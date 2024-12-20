@@ -1,5 +1,6 @@
 import pandas as pd
 
+# expects dataset to be unzipped into data directory
 PATH = "CUB_200_2011/attributes/image_attribute_labels.txt"
 
 # read csv
