@@ -23,5 +23,5 @@ train_indices = pd.read_csv(
     TRAIN_TEST_PATH, sep=r"\s+", names=["image_id", "is_train"], index_col="image_id"
 )
 
-data[train_indices == 1].to_csv("CUB_200_2011_concepts_train.csv")
-data[train_indices == 0].to_csv("CUB_200_2011_concepts_test.csv")
+data.loc[train_indices["is_train"] == 1].to_csv("CUB_200_2011_concepts_train.csv")
+data.loc[train_indices["is_train"] == 0].to_csv("CUB_200_2011_concepts_test.csv")
