@@ -1,4 +1,4 @@
-0,1,2,3
+Cluster 0,Cluster 1,Cluster 2,Cluster 3
 has_bill_shape::curved_(up_or_down),has_bill_shape::hooked,has_wing_color::rufous,has_bill_shape::needle
 has_bill_shape::dagger,has_wing_color::purple,has_wing_color::red,has_wing_color::blue
 has_bill_shape::hooked_seabird,has_wing_color::pink,has_upperparts_color::rufous,has_wing_color::iridescent

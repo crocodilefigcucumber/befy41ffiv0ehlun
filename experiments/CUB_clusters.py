@@ -87,6 +87,7 @@ table_data = {
     key: value + [""] * (max_len - len(value)) for key, value in data.items()
 }  # Pad shorter lists
 table_data = pd.DataFrame.from_dict(table_data, orient="columns")
+table_data.columns = [f"Cluster {label}" for label in table_data.columns]
 table_data.to_csv("clusters_idx.csv", index=False)
 
 data = clust_str_labels
@@ -95,4 +96,5 @@ table_data = {
     key: value + [""] * (max_len - len(value)) for key, value in data.items()
 }  # Pad shorter lists
 table_data = pd.DataFrame.from_dict(table_data, orient="columns")
+table_data.columns = [f"Cluster {label}" for label in table_data.columns]
 table_data.to_csv("clusters_str.csv", index=False)
