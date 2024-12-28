@@ -285,8 +285,8 @@ def get_train_test_loaders(batch_size):
         num_workers=4
     )
 
-    return train_loader, test_loader
+    return {"TRAIN": train_loader, "TEST": test_loader}
 
 
 if __name__ == "__main__":
-    train_loader, test_loader = get_train_test_loaders(batch_size=1024)
+    dataloaders = get_train_test_loaders(batch_size=1024)
