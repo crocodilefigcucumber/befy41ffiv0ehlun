@@ -2,7 +2,6 @@ import os
 from torchvision.datasets import CelebA
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 
 import os

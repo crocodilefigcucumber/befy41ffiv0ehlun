@@ -16,3 +16,5 @@ This project uses the following three datasets:
 The datasets should be downloaded on first use and then reused for subsequent runs. if you run the respective file in `data/` it will download the respective dataset. Each of the corresponding data loader functions will return a dict of strings "TRAIN|VAL|TEST" mapped to a dataloader for that split of the data. The CUB dataset does not have a "VAL" split.
 
 Warning: The [CelebA dataset is janky](https://github.com/pytorch/vision/issues/1920) and often returns a Google Drive error on attempting to fetch the large zip file programatically. As such you [should download that file manually](https://drive.google.com/uc?id=0B7EVK8r0v71pZjFTYXZWM3FlRnM) and extract it to `data/celeba/img_align_celeba/`.
+
+Note: The AWA2 Dataset `AwA2-data.zip` is ~14Gb compressed.
