@@ -14,8 +14,6 @@ import tarfile
 
 from PIL import Image
 
-#import itertools
-
 
 def download_cub200_2011():
     """
@@ -61,19 +59,6 @@ def download_cub200_2011():
 
     return dataset_dir
 
-def read_txt_file(filepath, num_cols, col_names=None):
-    """
-    Safely read space-separated text files with a specific number of columns.
-    """
-    data = []
-    with open(filepath, 'r') as f:
-        for line in f:
-            parts = line.strip().split()
-            if len(parts) >= num_cols:
-                data.append(parts[:num_cols])
-    if col_names:
-        return pd.DataFrame(data, columns=col_names)
-    return pd.DataFrame(data)
 
 def load_cub_data(data_dir):
     """
@@ -81,23 +66,23 @@ def load_cub_data(data_dir):
     Returns dictionaries for image paths, labels, and attribute data.
     """
     # Load image paths and labels using the safe reader
-    images_df = read_txt_file(os.path.join(data_dir, 'images.txt'), 2)
+    images_df = utils.read_txt_file(os.path.join(data_dir, 'images.txt'), 2)
     images_df.columns = ['image_id', 'image_path']
     images_df['image_id'] = images_df['image_id'].astype(int)
 
-    labels_df = read_txt_file(os.path.join(data_dir, 'image_class_labels.txt'), 2)
+    labels_df = utils.read_txt_file(os.path.join(data_dir, 'image_class_labels.txt'), 2)
     labels_df.columns = ['image_id', 'class_id']
     labels_df['image_id'] = labels_df['image_id'].astype(int)
     labels_df['class_id'] = labels_df['class_id'].astype(int)
 
     # Load train/test split
-    train_test_df = read_txt_file(os.path.join(data_dir, 'train_test_split.txt'), 2)
+    train_test_df = utils.read_txt_file(os.path.join(data_dir, 'train_test_split.txt'), 2)
     train_test_df.columns = ['image_id', 'is_training']
     train_test_df['image_id'] = train_test_df['image_id'].astype(int)
     train_test_df['is_training'] = train_test_df['is_training'].astype(int)
 
     # Load attributes using the safe reader
-    attr_df = read_txt_file(os.path.join(data_dir, 'attributes/image_attribute_labels.txt'), 5)
+    attr_df = utils.read_txt_file(os.path.join(data_dir, 'attributes/image_attribute_labels.txt'), 5)
     attr_df.columns = ['image_id', 'attribute_id', 'is_present', 'certainty', 'time']
     attr_df = attr_df.astype({
         'image_id': int,
@@ -199,7 +184,7 @@ class BirdsDataset(Dataset):
         # Stack all arrays into a single 2D array
         concepts = np.vstack(concept_arrays)
         #concept_names = None
-        concept_names = read_txt_file("cub/attributes.txt", 2, ["id","concept_names"])["concept_names"]
+        concept_names = utils.read_txt_file("cub/attributes.txt", 2, ["id","concept_names"])["concept_names"]
         print(concept_names)
         if concept_names is None:
             concept_names = [f'concept_{i}' for i in range(concepts.shape[1])]

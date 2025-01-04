@@ -9,6 +9,8 @@ import time
 import requests
 from torchvision.datasets import CelebA
 from torchvision import transforms
+import numpy as np
+import utils
 
 def download_file_from_google_drive(file_id, destination, filename, max_retries=3, retry_delay=3600):
     """
@@ -206,8 +208,52 @@ def get_train_val_test_loaders(batch_size=32):
     return {"TRAIN": train_dataloader, "VAL": val_dataloader, "TEST": test_dataloader}
 
 
+def prepare_binary_concept_matrix():
+    
+    
+        # write the concept Tensor out as a Pandas dataframe
+        #concept_arrays = [t.numpy() if torch.is_tensor(t) else np.array(t) for t in self.concepts]
+
+        # Stack all arrays into a single 2D array
+        #concepts = np.vstack(concept_arrays)
+        #concept_names = None
+        splits = utils.read_txt_file("data/celeba/list_eval_partition.txt", 2, ["file_name","split"])
+        print(splits)
+        value_counts = splits['split'].value_counts()
+        print(value_counts)
+        
+        filenames = splits[splits['split'] == "0"]['file_name'].tolist()
+        print(filenames)
+        print(len(filenames))
+        
+        concepts = utils.read_txt_file("data/celeba/list_attr_celeba.txt", 41)
+        
+   
+        concepts = concepts.replace("-1", "0")
+        print(concepts)
+        print(len(concepts))
+        
+        filtered_concepts = concepts[concepts['file_name'].isin(filenames)]
+
+        print(filtered_concepts)
+        print(len(filtered_concepts))
+        print(len(filenames))
+        
+        filtered_concepts.to_csv("data/celeba/output/concepts_train.csv", index=False)
+
+  
+        # 0    162770 Train
+        # 2     19962
+        # 1     19867
+        return
+        #if concept_names is None:
+        #    concept_names = [f'concept_{i}' for i in range(concepts.shape[1])]
+        #return
+
+
 if __name__ == "__main__":
     # Create dataloaders
+
     dataloaders = get_train_val_test_loaders(32)
     
     for key, dataloader in dataloaders.items():
@@ -218,3 +264,5 @@ if __name__ == "__main__":
         print(f"Batch shape: {images.shape}")
         print(f"Labels shape: {labels.shape}")
         break
+    # Optionally
+    prepare_binary_concept_matrix()
