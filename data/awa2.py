@@ -8,6 +8,8 @@ from torchvision.datasets.utils import download_url, check_integrity
 from PIL import Image
 from torch.utils.data import DataLoader
 
+import utils
+
 class AWA2Dataset(VisionDataset):
     """
     Animals with Attributes 2 (AWA2) Dataset loader with caching functionality
@@ -159,9 +161,57 @@ def get_train_test_loaders(batch_size=32):
 
     return {"TRAIN": train_dataloader,
             "TEST": test_dataloader}
-
     
-    return train_set, test_set
+    
+def prepare_binary_concept_matrix():    
+    # write the concept Tensor out as a Pandas dataframe
+    #concept_arrays = [t.numpy() if torch.is_tensor(t) else np.array(t) for t in self.concepts]
+
+    # Stack all arrays into a single 2D array
+    #concepts = np.vstack(concept_arrays)
+    #concept_names = None
+    concept_names = list(utils.read_txt_file("data/awa2/Animals_with_Attributes2/predicates.txt", 2, ["id","concept"])["concept"].values)
+    print(concept_names)
+    print(type(concept_names))
+    
+    row_names = list(utils.read_txt_file("data/awa2/Animals_with_Attributes2/classes.txt", 2, ["id","animal"])["animal"].values)
+    
+    predicate_matrix_binary = utils.read_txt_file("data/awa2/Animals_with_Attributes2/predicate-matrix-binary.txt", len(concept_names), concept_names)
+    predicate_matrix_binary.insert(0, 'animal', row_names)
+    
+    train_classes = list(utils.read_txt_file("data/awa2/Animals_with_Attributes2/trainclasses.txt", 1, ["animal"])["animal"].values)
+    print(train_classes)
+
+    predicate_matrix_binary = predicate_matrix_binary[predicate_matrix_binary['animal'].isin(train_classes)]
+
+    print(predicate_matrix_binary)
+    predicate_matrix_binary.to_csv("data/awa2/output/concepts_train.csv", index=False)
+
+    """
+    value_counts = splits['split'].value_counts()
+    print(value_counts)
+    
+    filenames = splits[splits['split'] == "0"]['file_name'].tolist()
+    print(filenames)
+    print(len(filenames))
+    
+    concepts = utils.read_txt_file("data/celeba/list_attr_celeba.txt", 41)
+    
+
+    concepts = concepts.replace("-1", "0")
+    print(concepts)
+    print(len(concepts))
+    
+    filtered_concepts = concepts[concepts['file_name'].isin(filenames)]
+
+    print(filtered_concepts)
+    print(len(filtered_concepts))
+    print(len(filenames))
+    
+    filtered_concepts.to_csv("data/celeba/output/concepts_train.csv", index=False)
+    """
+    return
+
     
     
 
@@ -177,3 +227,4 @@ if __name__ == "__main__":
         print(f"Batch shape: {images.shape}")
         print(f"Labels shape: {labels.shape}")
         break
+    prepare_binary_concept_matrix()

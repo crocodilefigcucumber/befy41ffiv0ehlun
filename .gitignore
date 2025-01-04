@@ -101,7 +101,8 @@ data/celeba/img_*
 data/celeba/list_*
 data/celeba/identity_CelebA.txt
 
-data/awa2/*
+data/awa2/Animals_with_Attributes2/*
+data/awa2/AwA2-data.zip
 data/cub/CUB_200_2011/*
 
 
