@@ -4,6 +4,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
+import utils
 
 import os
 import pandas as pd
@@ -60,7 +61,7 @@ def download_cub200_2011():
 
     return dataset_dir
 
-def read_txt_file(filepath, num_cols):
+def read_txt_file(filepath, num_cols, col_names=None):
     """
     Safely read space-separated text files with a specific number of columns.
     """
@@ -70,6 +71,8 @@ def read_txt_file(filepath, num_cols):
             parts = line.strip().split()
             if len(parts) >= num_cols:
                 data.append(parts[:num_cols])
+    if col_names:
+        return pd.DataFrame(data, columns=col_names)
     return pd.DataFrame(data)
 
 def load_cub_data(data_dir):
@@ -153,15 +156,16 @@ class BirdsDataset(Dataset):
                   (if None, will convert to tensor and normalize)
     """
 
-    def __init__(self, image_paths, concepts, labels, transform=None):
+    def __init__(self, image_ids, image_paths, concepts, labels, transform=None, save_concepts=False):
+      self.image_ids = image_ids
       self.concepts = []
       self.labels = []
       self.images = []
 
-      assert type(concepts) == type(labels) == type(image_paths) == list, (
+      assert type(image_ids) == type(concepts) == type(labels) == type(image_paths) == list, (
         "concepts, labels, and image_paths must be of the same type, list. \nGot: %s, %s, %s" % (type(concepts), type(labels), type(image_paths)))
 
-      assert len(image_paths) == len(concepts) == len(labels), (
+      assert len(image_ids) == len(image_paths) == len(concepts) == len(labels), (
         "Number of images, concepts, and labels must match")
 
       # Default transform if none provided
@@ -188,6 +192,30 @@ class BirdsDataset(Dataset):
         self.concepts.append(self._convert_concepts_to_tensor(concept))
         self.labels.append(torch.tensor(label, dtype=torch.long))
 
+      if save_concepts:
+        # write the concept Tensor out as a Pandas dataframe
+        concept_arrays = [t.numpy() if torch.is_tensor(t) else np.array(t) for t in self.concepts]
+
+        # Stack all arrays into a single 2D array
+        concepts = np.vstack(concept_arrays)
+        #concept_names = None
+        concept_names = read_txt_file("cub/attributes.txt", 2, ["id","concept_names"])["concept_names"]
+        print(concept_names)
+        if concept_names is None:
+            concept_names = [f'concept_{i}' for i in range(concepts.shape[1])]
+
+        # Create DataFrame with IDs and features
+        df = pd.DataFrame(concepts, columns=concept_names)
+        print(f"DataFrame shape: {df.shape}")
+        print(f"image_ids len: {len(image_ids)}")
+
+        df.insert(0, 'id', image_ids)  # Add IDs as the first column
+        # Save to CSV
+        print(f"DataFrame shape: {df.shape}")
+        df.to_csv("cub/output/concepts_train.csv", index=False)
+        print(f"Saved CSV file to: cub/output/concepts_train.csv")
+        
+            
     def _convert_concepts_to_tensor(self, concept_list):
         """
         Convert list of concept dictionaries to binary tensor.
@@ -224,6 +252,7 @@ def get_train_test_loaders(batch_size):
     print("\nLoading dataset metadata...")
     data = load_cub_data(data_dir)
 
+
     num_classes = len(set(data['labels'].values()))
 
     first_image_id = list(data['image_paths'].keys())[0]
@@ -250,16 +279,25 @@ def get_train_test_loaders(batch_size):
     train_ids = sorted([id for id, is_train in data['train_test_split'].items() if is_train == 1])
     test_ids = sorted([id for id, is_train in data['train_test_split'].items() if is_train == 0])
 
+    train_concepts = [data['attributes'][id] for id in train_ids]
+    
+    print("len(train_concepts) = %s" % len(train_concepts))
+    #print("train_concepts = %s" % train_concepts)
+    # These need the corresponding train_ids and likely the concpet mapped
 
     # Create training dataset using the sorted train IDs
     train_dataset = BirdsDataset(
+        image_ids = [id for id in train_ids],
         image_paths=[data['image_paths'][id] for id in train_ids],
-        concepts=[data['attributes'][id] for id in train_ids],
-        labels=[data['labels'][id] for id in train_ids]
+        concepts=train_concepts,
+        labels=[data['labels'][id] for id in train_ids],
+        save_concepts=True
     )
+    
 
     # Create validation dataset using the sorted test IDs
     test_dataset = BirdsDataset(
+        image_ids = [id for id in test_ids],
         image_paths=[data['image_paths'][id] for id in test_ids],
         concepts=[data['attributes'][id] for id in test_ids],
         labels=[data['labels'][id] for id in test_ids]
@@ -290,3 +328,4 @@ def get_train_test_loaders(batch_size):
 
 if __name__ == "__main__":
     dataloaders = get_train_test_loaders(batch_size=1024)
+    #utils.dataloader_to_csv(dataloaders["Train"], "/output/cub_train.csv", column_names=[])

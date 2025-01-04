@@ -98,6 +98,6 @@ CUB_200_2011/
 # Thes are all the data directories.
 data/celeba/*
 data/awa2/*
-data/cub/*
+data/cub/CUB_200_2011/*
 
 

@@ -22,10 +22,10 @@ class AWA2Dataset(VisionDataset):
         
         self.train = train
         self.root = Path(root)
-        self.data_dir = self.root / "AwA2-data"
+        self.data_dir = self.root / "Animals_with_Attributes2"
         
-        if download:
-            self._download()
+        #if download:
+        #    self._download()
             
         if not self._check_exists():
             raise RuntimeError('Dataset not found. Use download=True to download it')
@@ -35,6 +35,7 @@ class AWA2Dataset(VisionDataset):
     
     def _check_exists(self):
         """Check if the dataset exists in the root directory"""
+        print(self.data_dir)
         return self.data_dir.exists()
     
     def _download(self):
@@ -74,12 +75,13 @@ class AWA2Dataset(VisionDataset):
         
         # Load train/test split information
         # You might need to adjust this based on the actual structure of AWA2
-        split_file = 'trainClassLabels.txt' if self.train else 'testClassLabels.txt'
-        split_path = self.data_dir / 'lists' / split_file
+        split_file = 'classes.txt'# if self.train else 'testclasses.txt'
+        split_path = self.data_dir / split_file
         
         # Load image paths and labels
         with open(split_path, 'r') as f:
             for line in f:
+                print("Line = %s" % line)
                 img_path, label = line.strip().split()
                 self.images.append(self.data_dir / 'images' / img_path)
                 self.targets.append(int(label))
@@ -124,7 +126,7 @@ def get_train_test_loaders(batch_size=32):
     """
     root="./awa2" 
     transform=None 
-    download=True
+    download=False
     
     num_workers=4
     train_dataset =  AWA2Dataset(
