@@ -123,7 +123,7 @@ if VISUALIZATION:
     # Beautify the plot
     plt.yticks(range(len(suffix_dict)), suffix_dict.keys())
     plt.xticks([])  # No x-axis labels
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", title="Legend")
+    # plt.legend(bbox_to_anchor=(0, -0.4), loc="lower left", ncol=5)
     plt.savefig(PLOTS_PATH + "CUB_clusters.pdf", bbox_inches="tight")
 
 """
