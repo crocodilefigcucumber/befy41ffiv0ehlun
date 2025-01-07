@@ -64,8 +64,8 @@ if VISUALIZATION:
     )
 
     # Assign each unique string a combination of color and shape
-    no_colors = 10
-    colors = plt.cm.gist_rainbow(np.linspace(0, 1, no_colors))
+    no_colors = 9
+    colors = plt.cm.tab10(np.linspace(0, 1, no_colors))
 
     shapes = ["s", "D"]
     no_shapes = len(shapes)
