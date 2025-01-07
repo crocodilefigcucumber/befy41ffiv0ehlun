@@ -35,6 +35,19 @@ table_data.to_csv("experiments/CUB_clusters_str.csv", index=False)
 if VISUALIZATION:
     sns.set_theme(context="paper", style="white")
 
+    # Increase font sizes globally
+    plt.rcParams.update(
+        {
+            "font.size": 18,  # General font size
+            "axes.titlesize": 24,  # Title font size
+            "axes.labelsize": 20,  # Axis label font size
+            "xtick.labelsize": 18,  # X-tick label font size
+            "ytick.labelsize": 18,  # Y-tick label font size
+            "legend.fontsize": 16,  # Legend font size
+            "legend.title_fontsize": 18,  # Legend title font size
+        }
+    )
+
     # Extract Suffixes
     suffix_dict = {}
     cluster_shift = len("cluster_")
