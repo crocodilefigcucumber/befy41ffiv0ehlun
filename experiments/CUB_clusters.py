@@ -24,7 +24,7 @@ with open(TRAIN_CONCEPT_PATH, mode="r", newline="", encoding="utf-8") as file:
     labels = [label for label in labels if label != "id"]  # remove id column
 
 
-no_clusters = 4
+no_clusters = 5
 
 table_data = clusterConcepts(concepts, no_clusters=no_clusters)
 table_data.to_csv("experiments/CUB_clusters_idx.csv", index=False)
