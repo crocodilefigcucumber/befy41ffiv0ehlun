@@ -7,13 +7,13 @@ import csv
 from collections import Counter
 from clustering import clusterConcepts
 
-TRAIN_CONCEPT_PATH = "data/cub/output/concepts_train.csv"
-PLOTS_PATH = "experiments/plots/CUB/"
-CLUSTERS_PATH = "experiments/clusters/CUB/"
+TRAIN_CONCEPT_PATH = "data/awa2/output/concepts_train.csv"
+PLOTS_PATH = "experiments/plots/AwA2/"
+CLUSTERS_PATH = "experiments/clusters/AwA2/"
 VISUALIZATION = True
 
 # load concepts
-concepts = pd.read_csv(TRAIN_CONCEPT_PATH, index_col="id")
+concepts = pd.read_csv(TRAIN_CONCEPT_PATH, index_col="animal")
 concepts = np.array(concepts)
 
 # read header, it contains the labels
@@ -21,16 +21,18 @@ concepts = np.array(concepts)
 with open(TRAIN_CONCEPT_PATH, mode="r", newline="", encoding="utf-8") as file:
     reader = csv.reader(file)
     labels = next(reader)  # Reads the first row as the header
-    labels = [label for label in labels if label != "id"]  # remove id column
+    labels = [
+        label.capitalize() for label in labels if label != "animal"
+    ]  # remove id column
 
 
-no_clusters = 5
+no_clusters = 4
 
 table_data = clusterConcepts(concepts, no_clusters=no_clusters)
-table_data.to_csv(CLUSTERS_PATH + "CUB_clusters_idx.csv", index=False)
+table_data.to_csv(CLUSTERS_PATH + "AwA2_clusters_idx.csv", index=False)
 
 table_data = clusterConcepts(concepts, no_clusters=no_clusters, str_labels=labels)
-table_data.to_csv(CLUSTERS_PATH + "CUB_clusters_str.csv", index=False)
+table_data.to_csv(CLUSTERS_PATH + "AwA2_clusters_str.csv", index=False)
 
 if VISUALIZATION:
     sns.set_theme(context="paper", style="white")
@@ -54,7 +56,7 @@ if VISUALIZATION:
     for cluster in table_data.columns:
         capitalized = f"Cluster ${cluster[cluster_shift :]}$"
         suffix_dict[capitalized] = sorted(
-            [entry[entry.find("::") + 2 :] for entry in table_data[cluster] if entry]
+            [entry for entry in table_data[cluster] if entry]
         )  # extract suffixes
 
     # Count the frequency of each suffix across all lists
@@ -62,6 +64,7 @@ if VISUALIZATION:
         item for sublist in suffix_dict.values() for item in sublist
     )
 
+    """
     # Filter out single-occurrence suffixes, give them their own symbol
     suffix_dict = {
         key: sorted(
@@ -70,6 +73,7 @@ if VISUALIZATION:
         )
         for key, lst in suffix_dict.items()
     }
+    """
 
     # Flatten and get unique strings
     unique_items = sorted(
@@ -123,8 +127,8 @@ if VISUALIZATION:
     # Beautify the plot
     plt.yticks(range(len(suffix_dict)), suffix_dict.keys())
     plt.xticks([])  # No x-axis labels
-    # plt.legend(bbox_to_anchor=(0, -0.4), loc="lower left", ncol=5)
-    plt.savefig(PLOTS_PATH + "CUB_clusters.pdf", bbox_inches="tight")
+    plt.legend(bbox_to_anchor=(0, -0.4), loc="lower left", ncol=5)
+    plt.savefig(PLOTS_PATH + "AwA2_clusters.pdf", bbox_inches="tight")
 
 """
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
