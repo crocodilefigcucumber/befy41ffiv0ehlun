@@ -5,7 +5,6 @@ import csv
 from clustering import clusterConcepts
 
 TRAIN_CONCEPT_PATH = "data/celeba/output/concepts_train.csv"
-PLOTS_PATH = "experiments/plots/CelebA/"
 CLUSTERS_PATH = "experiments/clusters/CelebA/"
 
 # load concepts
