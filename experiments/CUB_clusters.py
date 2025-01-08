@@ -10,7 +10,7 @@ from clustering import clusterConcepts
 TRAIN_CONCEPT_PATH = "data/cub/output/concepts_train.csv"
 PLOTS_PATH = "experiments/plots/CUB/"
 CLUSTERS_PATH = "experiments/clusters/CUB/"
-VISUALIZATION = True
+VISUALIZATION = False
 
 # load concepts
 concepts = pd.read_csv(TRAIN_CONCEPT_PATH, index_col="id")
@@ -66,7 +66,7 @@ if VISUALIZATION:
     suffix_dict = {
         key: sorted(
             [item for item in lst if suffix_counts[item] > 1]
-            + ["UNIQUE" for item in lst if suffix_counts[item] == 1]
+            #    + ["UNIQUE" for item in lst if suffix_counts[item] == 1]
         )
         for key, lst in suffix_dict.items()
     }
@@ -76,16 +76,26 @@ if VISUALIZATION:
         set(item for sublist in suffix_dict.values() for item in sublist)
     )
 
-    # Assign each unique string a combination of color and shape
-    no_colors = 9
-    colors = plt.cm.tab10(np.linspace(0, 1, no_colors))
-
-    shapes = ["s", "D"]
-    no_shapes = len(shapes)
-
     color_shape_map = {
-        item: (colors[i % no_colors], shapes[i % no_shapes])
-        for i, item in enumerate(unique_items)
+        "black": ("black", "s"),
+        "blue": ("blue", "s"),
+        "brown": ("saddlebrown", "s"),
+        "buff": ("lightsalmon", "s"),
+        "green": ("lime", "s"),
+        "grey": ("grey", "s"),
+        "multi-colored": ("crimson", "D"),
+        "solid": ("gold", "D"),
+        "spotted": ("silver", "D"),
+        "striped": ("mediumspringgreen", "D"),
+        "yellow": ("yellow", "s"),
+        "olive": ("darkolivegreen", "s"),
+        "orange": ("orange", "s"),
+        "pink": ("deeppink", "s"),
+        "purple": ("indigo", "s"),
+        "rufous": ("indianred", "s"),
+        "red": ("red", "s"),
+        "white": ("palegreen", "s"),
+        "iridescent": ("darkviolet", "D"),
     }
 
     # Track which labels have already been added to avoid duplicates in the legend
@@ -113,7 +123,7 @@ if VISUALIZATION:
                 y_vals[i],
                 color=color,
                 marker=shape,
-                s=100,
+                s=250,
                 label=label,
             )
             already_labeled.add(item)  # Mark this item as labeled
@@ -125,6 +135,31 @@ if VISUALIZATION:
     plt.xticks([])  # No x-axis labels
     # plt.legend(bbox_to_anchor=(0, -0.4), loc="lower left", ncol=5)
     plt.savefig(PLOTS_PATH + "CUB_clusters.pdf", bbox_inches="tight")
+
+# We will append random noise to our concepts to check clustering stability:
+no_concepts = len(labels)
+no_observations = len(concepts)
+no_noisy = int(no_concepts * 0.1)
+
+# Set seed
+np.random.seed(1)
+
+concepts = np.column_stack(
+    [
+        concepts,
+        np.random.binomial(n=1, p=0.5, size=(no_observations, no_noisy)),
+    ]
+)
+
+labels = labels + [f"Noise {i}" for i in range(no_noisy)]
+
+no_clusters = 4
+
+table_data = clusterConcepts(concepts, no_clusters=no_clusters)
+table_data.to_csv(CLUSTERS_PATH + "CUB_clusters_noisy_idx.csv", index=False)
+
+table_data = clusterConcepts(concepts, no_clusters=no_clusters, str_labels=labels)
+table_data.to_csv(CLUSTERS_PATH + "CUB_clusters_noisy_str.csv", index=False)
 
 """
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
