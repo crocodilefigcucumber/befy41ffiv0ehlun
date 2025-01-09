@@ -1,6 +1,8 @@
 from models import model
 import torch
 
+import numpy as np
+
 from data import cub
 
 import evaluate
@@ -28,3 +30,7 @@ if __name__ == "__main__":
     train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(train_dataset, val_dataset, test_dataset, batch_size=512)
 
     val_acc, concept_acc, label_predictions, concept_predictions = evaluate.evaluate_model(m, test_loader, device)
+    
+    concept_prediction_mat = np.vstack(concept_predictions)
+    label_predictions_mat = np.vstack(label_predictions)
+    np.savez('data/cub/output/cub_prediction_matrices.npz', first=concept_prediction_mat, second=label_predictions_mat)

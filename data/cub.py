@@ -215,7 +215,7 @@ def download_cub200_2011():
     if os.path.exists(dataset_dir) and os.path.exists(os.path.join(dataset_dir, 'images.txt')):
         print("Dataset already downloaded and extracted.")
         return dataset_dir
-    raise KeyError()
+
     os.makedirs(base_dir, exist_ok=True)
 
     # URL for the dataset
