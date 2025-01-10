@@ -21,16 +21,20 @@ def generate_data_from_config(config):
             'predicted_file': 'data/cub/output/cub_prediction_matrices.npz',
             'cluster_file': 'experiments/clusters/CUB/CUB_clusters_idx.csv',
             'groundtruth_file': 'data/cub/output/concepts_train.csv',
+            'n_concept' : 312, 
         },
         'Awa2': {
             'predicted_file': 'data/awa2/output/awa2_prediction_matrices.npz',
             'cluster_file': 'experiments/clusters/AwA2/AwA2_clusters_idx.csv',
             'groundtruth_file' : 'data/awa2/output/concepts_train.csv',
+            'n_concept' : 312, 
+
         },
         'CelebA': {
             'predicted_file': 'data/celeba/output/celeba_prediction_matrices.npz',
             'cluster_file': 'experiments/clusters/CelebA/CelebA_clusters_idx.csv',
-            'groundtruth_file' : 'data/celeba/output/concepts_train.csv'
+            'groundtruth_file' : 'data/celeba/output/concepts_train.csv',
+            'n_concept' : 312, 
         },
     }
 
@@ -48,9 +52,10 @@ def generate_data_from_config(config):
     # Validate that files exist
     if not os.path.exists(groundtruth_file):
         raise FileNotFoundError(f"GT concepts file not found: {groundtruth_file}")
-    if not os.path.exists(cluster_file_path):
+
     if not os.path.exists(predicted_file_path):
         raise FileNotFoundError(f"Predicted concepts file not found: {predicted_file_path}")
+    
     if not os.path.exists(cluster_file_path):
         raise FileNotFoundError(f"Cluster file not found: {cluster_file_path}")
     
@@ -61,6 +66,10 @@ def generate_data_from_config(config):
     groundtruth_data = pd.read_csv(groundtruth_file)
     groundtruth_concepts = torch.tensor(groundtruth_data,dtype=torch.float32)
     # Load cluster assignments
-    cluster_data = pd.read_csv(cluster_file_path)
-    cluster_assignments =.....
+    k = paths['n_concept']
+    cluster_assignments = torch.zeros(k)
+    concept_list = pd.read_csv(cluster_file_path)
+    for i, concept_dict in enumerate(concept_list):
+        cluster_assignments[i] = 1.0 if concept_dict['is_present'] == 1.0 else 0.0
+
     return predicted_concepts, groundtruth_concepts, cluster_assignments
