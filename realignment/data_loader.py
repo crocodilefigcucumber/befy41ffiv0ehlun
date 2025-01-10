@@ -67,7 +67,7 @@ def load_data():
     predicted_data = np.load(predicted_file_path)
     
     predicted_concepts = torch.tensor(predicted_data['first'], dtype=torch.float32)
-
+    print(predicted_concepts.size())
     # Load GT concepts
     groundtruth_data = pd.read_csv(groundtruth_file)
     groundtruth_concepts = torch.tensor(groundtruth_data.values,dtype=torch.float32)
