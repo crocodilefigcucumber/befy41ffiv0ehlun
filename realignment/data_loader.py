@@ -4,18 +4,22 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-def generate_data_from_config(config):
+
+from config import config
+
+def load_data():
     """
-    Generate data based on the dataset specified in the config.
+    Load data based on the dataset specified in the config.
 
     Args:
-        config (dict): Configuration dictionary containing dataset info.
+    --
 
     Returns:
         Tuple[torch.Tensor, torch.Tensor, dict, torch.Tensor]:
             predicted_concepts, groundtruth_concepts, cluster_assignments, labels.
     """
     # Define dataset-specific file paths
+    
     dataset_paths = {
         'CUB': {
             'predicted_file': 'data/cub/output/cub_prediction_matrices.npz',
@@ -61,15 +65,17 @@ def generate_data_from_config(config):
     
     # Load predicted concepts
     predicted_data = np.load(predicted_file_path)
+    
     predicted_concepts = torch.tensor(predicted_data['first'], dtype=torch.float32)
+
     # Load GT concepts
     groundtruth_data = pd.read_csv(groundtruth_file)
-    groundtruth_concepts = torch.tensor(groundtruth_data,dtype=torch.float32)
-    # Load cluster assignments
-    k = paths['n_concept']
-    cluster_assignments = torch.zeros(k)
-    concept_list = pd.read_csv(cluster_file_path)
-    for i, concept_dict in enumerate(concept_list):
-        cluster_assignments[i] = 1.0 if concept_dict['is_present'] == 1.0 else 0.0
+    groundtruth_concepts = torch.tensor(groundtruth_data.values,dtype=torch.float32)
 
-    return predicted_concepts, groundtruth_concepts, cluster_assignments
+    # Load cluster assignments
+    concept_dict = pd.read_csv(cluster_file_path)
+    concept_dict_melted = concept_dict.T.melt(ignore_index=False, var_name="concept").dropna(subset=['concept'])
+    cluster_assingments = pd.crosstab(concept_dict_melted.index, concept_dict_melted['value'])
+    cluster_assingments = torch.tensor(cluster_assingments.values, dtype=torch.float32)
+
+    return predicted_concepts, groundtruth_concepts, cluster_assingments
