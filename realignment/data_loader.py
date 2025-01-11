@@ -70,7 +70,7 @@ def load_data(config):
     predicted_concepts = torch.tensor(predicted_data['first'], dtype=torch.float32)
     # Load GT concepts
     groundtruth_data = pd.read_csv(groundtruth_file)
-    print(predicted_concepts)
+    groundtruth_data = groundtruth_data.iloc[:5794]
     groundtruth_concepts = torch.tensor(groundtruth_data.values,dtype=torch.float32)
 
     # Load cluster assignments
@@ -78,11 +78,8 @@ def load_data(config):
     concept_dict_melted = concept_dict.T.melt(ignore_index=False, var_name="concept").dropna(subset=['concept'])
     cluster_assingments = pd.crosstab(concept_dict_melted.index, concept_dict_melted['value'])
     cluster_assingments = torch.tensor(cluster_assingments.values, dtype=torch.float32)
-    print(f"Predicted Concepts Size: {predicted_concepts.size(0)}")
-    print(f"Groundtruth Concepts Size: {groundtruth_concepts.size(0)}")
-    print(f"Cluster Assignments Size: {cluster_assingments.size(2)}")
-
     return predicted_concepts, groundtruth_concepts, cluster_assingments
+
 load_data(config)
 
 def create_splits(file_path):
@@ -94,7 +91,7 @@ def create_splits(file_path):
         train_split (list): List of indices for the training set.
         val_split (list): List of indices for the validation set.
     """
-    data = pd.read_csv(file_path, delim_whitespace=True, header=None, names=["id", "split"])
+    data = pd.read_csv(file_path, sep='\s+', header=None, names=["id", "split"])
     train_ids = data[data['split'] == 1]['id'].tolist()
     
     # Shuffle train IDs
@@ -149,3 +146,4 @@ if __name__ == "__main__":
     train_loader, val_loader = create_dataloaders(
         predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size=32
     )
+    print(train_loader)
