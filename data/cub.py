@@ -4,13 +4,15 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-from data import utils
+import utils
 
 import os
 import pandas as pd
 import requests
 from tqdm import tqdm
 import tarfile
+
+import multiprocessing as mp
 
 from PIL import Image
 
@@ -141,10 +143,11 @@ class CUBDataset(Dataset):
                   (if None, will convert to tensor and normalize)
     """
 
-    def __init__(self, image_paths, concepts, labels, transform=None):
+    def __init__(self, image_paths, concepts, labels, ids, transform=None, split="train"):
       self.concepts = []
       self.labels = []
       self.images = []
+      self.ids = ids
 
       assert type(concepts) == type(labels) == type(image_paths) == list, (
         "concepts, labels, and image_paths must be of the same type, list. \nGot: %s, %s, %s" % (type(concepts), type(labels), type(image_paths)))
@@ -158,7 +161,7 @@ class CUBDataset(Dataset):
           transforms.ToTensor(),
           transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
       ])
-
+      
       # Default transform if none provided
       self.transform = transform if transform is not None else transforms.Compose([])
 
@@ -170,9 +173,27 @@ class CUBDataset(Dataset):
         # Apply base transforms
         image = base_transforms(image)
         self.images.append(image)
-
         self.concepts.append(self._convert_concepts_to_tensor(concept))
         self.labels.append(torch.tensor(label, dtype=torch.long))
+
+      # write the concept Tensor out as a Pandas dataframe
+      concept_arrays = [t.numpy() if torch.is_tensor(t) else np.array(t) for t in self.concepts]
+      # Stack all arrays into a single 2D array
+      concepts = np.vstack(concept_arrays)
+      #concept_names = None
+      concept_names = utils.read_txt_file(
+          "data/cub/attributes.txt", 2, ["id", "concept_names"])["concept_names"]
+      print(concept_names)
+      if concept_names is None:
+          concept_names = [f'concept_{i}' for i in range(concepts.shape[1])]
+      # Create DataFrame with IDs and features
+      df = pd.DataFrame(concepts, columns=concept_names)
+      df.insert(0, 'id', ids)  # Add IDs as the first column
+      # Save to CSV
+      df.to_csv("data/cub/output/concepts_%s.csv" % split, index=False)
+      print(f"Saved CSV file to: data/cub/output/concepts_%s.csv" % split)
+
+
 
     def _convert_concepts_to_tensor(self, concept_list):
         """
@@ -334,47 +355,59 @@ def get_data_dict():
   return data
 
 
+def split_train_split(data_dir):
+    # Initialize the split dictionary
+    # Load train/test split
+    train_test_df = read_txt_file(os.path.join(data_dir, 'CUB_200_2011', 'train_test_split.txt'), 2)
+    train_test_df.columns = ['image_id', 'is_training']
+    train_test_df['image_id'] = train_test_df['image_id'].astype(int)
+    train_test_df['is_training'] = train_test_df['is_training'].astype(int)
+
+    splits = {}
+    
+    train_df = train_test_df[train_test_df['is_training'] == 1]
+
+
+    # Get indices where value in dict is 1 (training)
+    train_ids = [id for id in train_df['image_id'].values]
+
+    # Randomly shuffle these indices
+    np.random.seed(42)
+    shuffled_indices = np.random.permutation(train_ids)
+
+    # Calculate split point for 80/20 split of training data
+    n_train = int(len(train_ids) * 0.8)
+
+    # First set all indices in original dict to 'test'
+    for idx in train_test_df['image_id']:
+        splits[idx] = 'test'
+
+    # Update training indices
+    for idx in shuffled_indices[:n_train]:
+        splits[idx] = 'train'
+
+    # Update validation indices
+    for idx in shuffled_indices[n_train:]:
+        #print(idx)
+        splits[idx] = 'val'
+    with open(os.path.join(data_dir, 'output', 'train_val_test_split.txt'), 'w') as f:
+        for id_, split in splits.items():
+            f.write(f'{id_}\t{split}\n')
+    return splits
+
 def get_train_val_test_datasets(data):
 
-  # Initialize the split dictionary
-  splits = {}
-
-  # Get indices where value in dict is 1 (training)
-  train_indices = [k for k, v in data['train_test_split'].items() if v == 1]
-
-  # Randomly shuffle these indices
-  shuffled_indices = np.random.permutation(train_indices)
-
-  # Calculate split point for 80/20 split of training data
-  n_train = int(len(train_indices) * 0.8)
-
-  # First set all indices in original dict to 'test'
-  for idx in data['train_test_split'].keys():
-      splits[idx] = 'test'
-
-  # Update training indices
-  for idx in shuffled_indices[:n_train]:
-      splits[idx] = 'train'
-
-  # Update validation indices
-  for idx in shuffled_indices[n_train:]:
-      splits[idx] = 'val'
-
+  splits = split_train_split("data/cub/")
   data['split'] = splits
-
 
   # First get sorted IDs for train and test
   train_ids = sorted([id for id, split in data['split'].items() if split == "train"])
   val_ids = sorted([id for id, split in data['split'].items() if split == "val"])
   test_ids = sorted([id for id, split in data['split'].items() if split == "test"])
 
-  print(len(train_ids))
-  print(len(val_ids))
-  print(len(test_ids))
-
-  # Following the transformations from CBM paper
-  resol = 299
-
+  print("Train IDs = %d" % len(train_ids))
+  print("Val IDs = %d" % len(val_ids))
+  print("Test IDs = %d" % len(test_ids))
 
   train_transforms = transforms.Compose([])
 
@@ -382,20 +415,23 @@ def get_train_val_test_datasets(data):
 
   test_transforms = transforms.Compose([])
 
-
   # Create training dataset using the sorted train IDs
   train_dataset = CUBDataset(
       image_paths=[data['image_paths'][id] for id in train_ids],
       concepts=[data['attributes'][id] for id in train_ids],
       labels=[data['labels'][id] for id in train_ids],
-      transform=train_transforms
+      ids=train_ids,
+      transform=train_transforms,
+      split="train"
   )
 
   val_dataset = CUBDataset(
       image_paths=[data['image_paths'][id] for id in val_ids],
       concepts=[data['attributes'][id] for id in val_ids],
       labels=[data['labels'][id] for id in val_ids],
-      transform=val_transforms
+      ids=val_ids,
+      transform=val_transforms,
+      split="val"
   )
 
   # Create validation dataset using the sorted test IDs
@@ -403,7 +439,9 @@ def get_train_val_test_datasets(data):
       image_paths=[data['image_paths'][id] for id in test_ids],
       concepts=[data['attributes'][id] for id in test_ids],
       labels=[data['labels'][id] for id in test_ids],
-      transform=test_transforms
+      ids=test_ids,
+      transform=test_transforms,
+      split="test"
   )
    # Verify the split
   print(f"Training samples: {len(train_dataset)}")
@@ -415,9 +453,6 @@ def get_train_val_test_datasets(data):
 
 
 def get_train_val_test_loaders(train_dataset, val_dataset, test_dataset, batch_size):
-
-  import multiprocessing as mp
-
   num_cpus = mp.cpu_count()
   num_workers = num_cpus - 2
   print(f"Number of CPUs: {num_cpus}")
@@ -448,6 +483,10 @@ def get_train_val_test_loaders(train_dataset, val_dataset, test_dataset, batch_s
   return train_loader, val_loader, test_loader
 
 
-if __name__ == "__main__":
-    dataloaders = get_train_test_loaders(batch_size=1024)
-    #utils.dataloader_to_csv(dataloaders["Train"], "/output/cub_train.csv", column_names=[])
+if __name__ == "__main__":    
+    data_dict = get_data_dict()
+    print("Creating Datasets")
+    train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(data_dict)
+    print("Creating Dataloaders")
+    train_loader, val_loader, test_loader = get_train_val_test_loaders(
+        train_dataset, val_dataset, test_dataset, batch_size=512)

@@ -3,7 +3,6 @@ from torchvision.datasets import CelebA
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-
 import os
 import time
 import requests
