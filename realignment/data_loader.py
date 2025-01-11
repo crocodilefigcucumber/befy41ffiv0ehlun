@@ -76,13 +76,20 @@ def load_data(config):
     # Load cluster assignments
     concept_dict = pd.read_csv(cluster_file_path)
     concept_dict_melted = concept_dict.T.melt(ignore_index=False, var_name="concept").dropna(subset=['concept'])
-    cluster_assingments = pd.crosstab(concept_dict_melted.index, concept_dict_melted['value'])
-    cluster_assingments = torch.tensor(cluster_assingments.values, dtype=torch.float32)
-    return predicted_concepts, groundtruth_concepts, cluster_assingments
+    cluster_assignments = pd.crosstab(concept_dict_melted.index, concept_dict_melted['value'])
+    cluster_assignments.index = range(len(cluster_assignments))
+    # Initialize the result list
+    result = [-1] * len(cluster_assignments.columns)  # Default to -1 for columns without a `1`
 
-load_data(config)
+    # Iterate over columns to find the 0-indexed row number of `1`s
+    for col_idx in range(len(cluster_assignments.columns)):
+        for row_idx in range(len(cluster_assignments)):
+            if cluster_assignments.iloc[row_idx, col_idx] == 1:
+                result[col_idx] = row_idx  # Assign the 0-indexed row number
+                break  # Stop after finding the first `1`
+    return predicted_concepts, groundtruth_concepts, cluster_assignments
 
-def create_splits(file_path):
+def create_splits(config):
     """
     Splits the train data from train_test_split.txt into train and validation sets (80/20).
     Args:
@@ -91,6 +98,18 @@ def create_splits(file_path):
         train_split (list): List of indices for the training set.
         val_split (list): List of indices for the validation set.
     """
+    split_paths = {
+        'CUB': {'file_path' : 'data/cub/CUB_200_2011/train_test_split.txt'
+                },
+        'Awa2': {'file_path' : ''
+                 },
+        'CelebA': {'file_path': ''
+                   },
+    }
+    dataset = config['dataset']
+    paths = split_paths[dataset]
+
+    file_path = paths['file_path']
     data = pd.read_csv(file_path, sep='\s+', header=None, names=["id", "split"])
     train_ids = data[data['split'] == 1]['id'].tolist()
     
@@ -103,15 +122,13 @@ def create_splits(file_path):
     # Assign 80% to 'train' and 20% to 'val'
     train_split = shuffled_train_ids[:n_train].tolist()
     val_split = shuffled_train_ids[n_train:].tolist()
-    
     return train_split, val_split
 
 
 class CustomDataset(Dataset):
-    def __init__(self, predicted_concepts, groundtruth_concepts, cluster_assignments):
+    def __init__(self, predicted_concepts, groundtruth_concepts):
         self.predicted_concepts = predicted_concepts
         self.groundtruth_concepts = groundtruth_concepts
-        self.cluster_assignments = cluster_assignments
 
     def __len__(self):
         return self.predicted_concepts.size(0)
@@ -120,11 +137,10 @@ class CustomDataset(Dataset):
         return (
             self.predicted_concepts[idx],
             self.groundtruth_concepts[idx],
-            self.cluster_assignments[idx],
         )
 
-def create_dataloaders(predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size=32):
-    dataset = CustomDataset(predicted_concepts, groundtruth_concepts, cluster_assignments)
+def create_dataloaders(predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size):
+    dataset = CustomDataset(predicted_concepts, groundtruth_concepts)
     train_loader = DataLoader(Subset(dataset, train_split), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(Subset(dataset, val_split), batch_size=batch_size, shuffle=False)
     return train_loader, val_loader
@@ -139,11 +155,10 @@ if __name__ == "__main__":
     predicted_concepts, groundtruth_concepts, cluster_assignments = load_data(config)
 
     # Create splits
-    file_path = 'data/cub/CUB_200_2011/train_test_split.txt'
+    file_path = 
     train_split, val_split = create_splits(file_path)
 
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(
         predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size=32
     )
-    print(train_loader)
