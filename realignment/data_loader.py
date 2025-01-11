@@ -144,21 +144,3 @@ def create_dataloaders(predicted_concepts, groundtruth_concepts, cluster_assignm
     train_loader = DataLoader(Subset(dataset, train_split), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(Subset(dataset, val_split), batch_size=batch_size, shuffle=False)
     return train_loader, val_loader
-
-
-# Main Test Code
-if __name__ == "__main__":
-    # Configuration for the dataset
-    config = {'dataset': 'CUB'}
-
-    # Load data
-    predicted_concepts, groundtruth_concepts, cluster_assignments = load_data(config)
-
-    # Create splits
-    file_path = 
-    train_split, val_split = create_splits(file_path)
-
-    # Create dataloaders
-    train_loader, val_loader = create_dataloaders(
-        predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size=32
-    )
