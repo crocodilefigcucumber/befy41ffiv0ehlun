@@ -7,15 +7,15 @@ from concept_corrector_models import BaselineConceptCorrector, LSTMConceptCorrec
 from train import train_model
 from eval import evaluate_baseline
 from data_loader import load_data, create_splits, create_dataloaders, CustomDataset
-
 # =========================
 # Main Function
 # =========================
 def main():
     device = config['device']
     print(f"Using device: {device}")
-    predicted_concepts, groundtruth_concepts, concept_to_cluster = load_data(config)
+    predicted_concepts, groundtruth_concepts, concept_to_cluster, input_size, output_size, number_clusters = load_data(config)
     train_split, val_split = create_splits(config)
+
 
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(
@@ -28,28 +28,28 @@ def main():
     if model_type == 'MultiLSTM':
         ConceptCorrectorClass = MultiLSTMConceptCorrector
         concept_corrector = ConceptCorrectorClass(
-            input_size=config['input_size'],
+            input_size=input_size,
             hidden_size=config['hidden_size'],
             num_layers=config['num_layers'],
-            output_size=config['output_size'],
-            m_clusters=config['data_generation']['m'],
+            output_size=output_size,
+            m_clusters=number_clusters,
             concept_to_cluster=concept_to_cluster,
             input_format=config['input_format']
         ).to(device)
     elif model_type == 'LSTM':
         ConceptCorrectorClass = LSTMConceptCorrector
         concept_corrector = ConceptCorrectorClass(
-            input_size=config['input_size'],
+            input_size=input_size,
             hidden_size=config['hidden_size'],
             num_layers=config['num_layers'],
-            output_size=config['output_size'],
+            output_size=output_size,
             input_format=config['input_format']
         ).to(device)
     elif model_type == 'Baseline':
         ConceptCorrectorClass = BaselineConceptCorrector
         concept_corrector = ConceptCorrectorClass(
-            input_size=config['input_size'],
-            output_size=config['output_size'],
+            input_size=input_size,
+            output_size=output_size,
             input_format=config['input_format']
         ).to(device)
     else:

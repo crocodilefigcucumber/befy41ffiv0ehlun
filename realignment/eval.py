@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from train_utils import ucp
+from intervention_utils import ucp
 from train_utils import compute_loss
 
 

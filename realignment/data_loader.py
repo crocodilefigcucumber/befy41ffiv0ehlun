@@ -87,7 +87,11 @@ def load_data(config):
             if cluster_assignments.iloc[row_idx, col_idx] == 1:
                 result[col_idx] = row_idx  # Assign the 0-indexed row number
                 break  # Stop after finding the first `1`
-    return predicted_concepts, groundtruth_concepts, cluster_assignments
+    input_size = paths['n_concept']
+    output_size = paths['n_concept']
+    number_clusters = len(cluster_assignments)
+
+    return predicted_concepts, groundtruth_concepts, cluster_assignments, input_size, output_size, number_clusters
 
 def create_splits(config):
     """
@@ -115,7 +119,6 @@ def create_splits(config):
     
     # Shuffle train IDs
     shuffled_train_ids = np.random.permutation(train_ids)
-    
     # Calculate the split point for 80/20 split
     n_train = int(len(train_ids) * 0.8)
     
@@ -133,13 +136,14 @@ class CustomDataset(Dataset):
     def __len__(self):
         return self.predicted_concepts.size(0)
 
+
     def __getitem__(self, idx):
         return (
             self.predicted_concepts[idx],
             self.groundtruth_concepts[idx],
         )
-
-def create_dataloaders(predicted_concepts, groundtruth_concepts, cluster_assignments, train_split, val_split, batch_size):
+    
+def create_dataloaders(predicted_concepts, groundtruth_concepts, train_split, val_split, batch_size):
     dataset = CustomDataset(predicted_concepts, groundtruth_concepts)
     train_loader = DataLoader(Subset(dataset, train_split), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(Subset(dataset, val_split), batch_size=batch_size, shuffle=False)
