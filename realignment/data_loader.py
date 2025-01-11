@@ -90,7 +90,6 @@ def load_data(config):
     input_size = paths['n_concept']
     output_size = paths['n_concept']
     number_clusters = len(cluster_assignments)
-
     return predicted_concepts, groundtruth_concepts, cluster_assignments, input_size, output_size, number_clusters
 
 def create_splits(config):
@@ -115,6 +114,8 @@ def create_splits(config):
 
     file_path = paths['file_path']
     data = pd.read_csv(file_path, sep='\s+', header=None, names=["id", "split"])
+    if dataset == 'CUB' :
+        data["id"] = data["id"] - 1
     train_ids = data[data['split'] == 1]['id'].tolist()
     
     # Shuffle train IDs
@@ -126,8 +127,7 @@ def create_splits(config):
     train_split = shuffled_train_ids[:n_train].tolist()
     val_split = shuffled_train_ids[n_train:].tolist()
     return train_split, val_split
-
-
+create_splits(config)
 class CustomDataset(Dataset):
     def __init__(self, predicted_concepts, groundtruth_concepts):
         self.predicted_concepts = predicted_concepts
