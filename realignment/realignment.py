@@ -2,15 +2,21 @@ import torch
 from torch import nn
 import os
 import json
-
 from config import config
-from concept_corrector_models import BaselineConceptCorrector, LSTMConceptCorrector, MultiLSTMConceptCorrector
+from concept_corrector_models import (
+    BaselineConceptCorrector,
+    LSTMConceptCorrector,
+    MultiLSTMConceptCorrector,
+    GRUConceptCorrector,
+    RNNConceptCorrector,
+    MultiGRUConceptCorrector,
+    MultiRNNConceptCorrector,
+)
 from train import train_model
 from eval import evaluate_baseline
 from data_loader import load_data, create_dataloaders, CustomDataset
 
-
-
+ 
 # =========================
 # Main Function
 # =========================
@@ -54,6 +60,52 @@ def main():
             output_size=output_size,
             input_format=config['input_format']
         ).to(device)
+
+    elif model_type == 'GRU':
+        ConceptCorrectorClass = GRUConceptCorrector
+        concept_corrector = ConceptCorrectorClass(
+            input_size=input_size,
+            hidden_size=config['hidden_size'],
+            num_layers=config['num_layers'],
+            output_size=output_size,
+            input_format=config['input_format']
+        ).to(device)
+
+    elif model_type == 'RNN':
+        ConceptCorrectorClass = RNNConceptCorrector
+        concept_corrector = ConceptCorrectorClass(
+            input_size=input_size,
+            hidden_size=config['hidden_size'],
+            num_layers=config['num_layers'],
+            output_size=output_size,
+            input_format=config['input_format']
+        ).to(device)
+
+    elif model_type == 'MultiGRU':
+        ConceptCorrectorClass = MultiGRUConceptCorrector
+        concept_corrector = ConceptCorrectorClass(
+            input_size=input_size,
+            hidden_size=config['hidden_size'],
+            num_layers=config['num_layers'],
+            output_size=output_size,
+            m_clusters=number_clusters,
+            concept_to_cluster=concept_to_cluster,
+            input_format=config['input_format']
+        ).to(device)
+
+    elif model_type == 'MultiRNN':
+        ConceptCorrectorClass = MultiRNNConceptCorrector
+        concept_corrector = ConceptCorrectorClass(
+            input_size=input_size,
+            hidden_size=config['hidden_size'],
+            num_layers=config['num_layers'],
+            output_size=output_size,
+            m_clusters=number_clusters,
+            concept_to_cluster=concept_to_cluster,
+            input_format=config['input_format']
+        ).to(device)
+
+
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
     print(f"{model_type} model initialized.")
