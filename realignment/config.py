@@ -31,20 +31,6 @@ config = {
     # Device Configuration
     'device': 'cuda' if torch.cuda.is_available() else 'cpu',  # Automatically select 'cuda' if available
 
-
-    # REMOVE LATER
-
-    # # Data Generation Parameters
-    # 'data_generation': {
-    #     'k': 50,             # Number of concepts
-    #     'n_total': 12000,    # Total number of observations (training + validation)
-    #     'n_train': 10000,    # Number of training observations
-    #     'n_val': 2000,       # Number of validation observations
-    #     'J': 5,              # Number of target classes
-    #     'm': 10,             # Number of concept clusters (used only for MultiLSTM)
-    #     'seed': 42,          # Random seed
-    # },
-
     # Adapter Configuration
     'adapter_path': None,                # Path to adapter model (set to None if not used)
 
