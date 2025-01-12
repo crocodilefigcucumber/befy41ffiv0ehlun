@@ -7,6 +7,7 @@ import time
 import os
 import matplotlib.pyplot as plt
 from datetime import datetime
+import json
 
 from eval import evaluate_model
 from intervention_utils import ucp
@@ -32,12 +33,23 @@ def train_model(concept_corrector: nn.Module, train_loader: DataLoader, val_load
     early_stop_patience = config['early_stop_patience']
     train_losses = []
     val_losses = []
-    trained_models_dir = os.path.join('trained_models')
+
+
+    # model saving
+    trained_models_dir = os.path.join('trained_models', config['dataset'], config['model'])
     os.makedirs(trained_models_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    final_model_filename = f"best_model_{config['model']}_{timestamp}.pth"
+    final_model_filename = "best_model.pth"
     final_model_path = os.path.join(trained_models_dir, final_model_filename)
     
+    # Save the config dictionary as config.json
+    config_save_path = os.path.join(trained_models_dir, 'config.json')
+    with open(config_save_path, 'w') as f:
+        json.dump(config, f, indent=4)
+    
+    # Initialize a variable to store the best state_dict
+    best_model_state = None
+
+
     # Initial Evaluation Before Training
     print("\nInitial Evaluation Before Training:")
     initial_train_loss = evaluate_model(concept_corrector, train_loader, device, config, concept_to_cluster, adapter, phase='Initial Training')
@@ -113,28 +125,32 @@ def train_model(concept_corrector: nn.Module, train_loader: DataLoader, val_load
         average_val_loss = val_loss / len(val_loader)
         val_losses.append(average_val_loss)
         
-        # Early Stopping Check
+
+        # Early Stopping Check and update best model state
         if average_val_loss < best_val_loss:
             best_val_loss = average_val_loss
             early_stop_counter = 0
             print(f"Epoch {epoch}: Improved validation loss to {best_val_loss:.4f}.")
+            # Store the best model state_dict
+            best_model_state = concept_corrector.state_dict()
         else:
             early_stop_counter += 1
             print(f"Epoch {epoch}: Validation loss did not improve ({average_val_loss:.4f}).")
         
         epoch_time = time.time() - start_time
-        print(f"Epoch [{epoch}/{config['epochs']}], "
-              f"Train Loss: {average_train_loss:.4f}, "
-              f"Val Loss: {average_val_loss:.4f}, "
-              f"Time: {epoch_time:.2f}s")
+        print(f"Epoch [{epoch}/{config['epochs']}], Train Loss: {average_train_loss:.4f}, Val Loss: {average_val_loss:.4f}, Time: {epoch_time:.2f}s")
         
         if early_stop_counter >= early_stop_patience:
             print(f"Early stopping triggered after {epoch} epochs.")
             break
     
-    # Save the best model
-    torch.save(concept_corrector.state_dict(), final_model_path)
-    print(f"Best model saved to {final_model_path}")
+
+   # Save the best model state dictionary if available
+    if best_model_state is not None:
+        torch.save(best_model_state, final_model_path)
+        print(f"Best model saved to {final_model_path}")
+    else:
+        print("No improvement observed during training. Model not saved.")
     
     # # Plot Training and Validation Loss
     # if config['model'] != 'Baseline':
