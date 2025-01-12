@@ -4,7 +4,8 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-import utils
+
+from data import utils
 
 import os
 import pandas as pd

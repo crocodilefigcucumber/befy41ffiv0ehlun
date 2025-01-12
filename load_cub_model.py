@@ -27,12 +27,14 @@ if __name__ == "__main__":
     print("Creating Datasets")
     train_dataset, val_dataset, test_dataset = cub.get_train_val_test_datasets(data_dict)
     print("Creating Dataloaders")
-    train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(train_dataset, val_dataset, test_dataset, batch_size=512)
-    train_acc, train_concept_acc, train_label_predictions, train_concept_predictions = evaluate.evaluate_model(m, train_loader, device)
+    train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(
+        train_dataset, val_dataset, test_dataset, batch_size=512)
 
-    val_acc, val_concept_acc, val_label_predictions, val_concept_predictions = evaluate.evaluate_model(m, val_loader, device)
+    train_acc, train_concept_acc, train_label_predictions, train_concept_predictions = evaluate.evaluate_model(m, train_loader, "train", device)
+
+    val_acc, val_concept_acc, val_label_predictions, val_concept_predictions = evaluate.evaluate_model(m, val_loader, "val", device)
     
-    test_acc, test_concept_acc, test_label_predictions, test_concept_predictions = evaluate.evaluate_model(m, test_loader, device)
+    test_acc, test_concept_acc, test_label_predictions, test_concept_predictions = evaluate.evaluate_model(m, test_loader, "test", device)
     
     concept_prediction_mat_test = np.vstack(test_concept_predictions)
     label_predictions_mat_test = np.vstack(test_label_predictions)
@@ -40,4 +42,11 @@ if __name__ == "__main__":
     label_predictions_mat_train = np.vstack(train_label_predictions)
     concept_prediction_mat_val = np.vstack(val_concept_predictions)
     label_predictions_mat_val = np.vstack(val_label_predictions) 
-    np.savez('data/cub/output/cub_prediction_matrices.npz', first=concept_prediction_mat_test, second = concept_prediction_mat_train, third = concept_prediction_mat_val, fourth=label_predictions_mat)
+    # Note the slightly weird order here.
+    np.savez('data/cub/output/cub_prediction_matrices.npz',
+             first = concept_prediction_mat_test,
+             second = concept_prediction_mat_train,
+             third = concept_prediction_mat_val,
+             fourth = label_predictions_mat_test,
+             fifth = label_predictions_mat_train,
+             sixth = label_predictions_mat_val)
