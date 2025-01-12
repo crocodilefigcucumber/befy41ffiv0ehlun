@@ -1,8 +1,10 @@
 import torch
+from torch import nn
 import numpy as np
 
+import multiprocessing as mp
 import os
-import re
+import json
 
 from models import model
 from data import cub
@@ -12,6 +14,7 @@ from realignment.concept_corrector_models import (
     LSTMConceptCorrector,
     MultiLSTMConceptCorrector,
 )
+
 from realignment.data_loader import load_data, create_dataloaders
 
 import evaluate
@@ -20,86 +23,57 @@ import evaluate
 # Main Function
 # =========================
 
-PRECOMPUTED_PATH = "data/cub/output/cub_prediction_matrices.npz"
 REALIGNMENT_PATH = "trained_models/CUB"
 
 if __name__ == "__main__":
     # =========================
-    # Evaluate Concept predictor X->c
+    # Load CBM
     # =========================
+    cub_model_path = "models/cub_model.pth"
+    num_concepts = 312
+    num_classes = 200
+    m = model.ConceptBottleneckModel(num_concepts, num_classes)
+    # Load the state dict
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # First check whether predictions already exist:
-    if not os.path.isfile(PRECOMPUTED_PATH):
-        print("No precomputed predictions found, computing them now ...")
+    state_dict = torch.load(cub_model_path, map_location=torch.device(device))
+    m.load_state_dict(state_dict=state_dict)
+    m.eval()
 
-        cub_model_path = "models/cub_model.pth"
-        num_concepts = 312
-        num_classes = 200
-        m = model.ConceptBottleneckModel(num_concepts, num_classes)
-        # Load the state dict
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # extract class predictor
+    class_predictor = m.class_predictor
 
-        state_dict = torch.load(cub_model_path, map_location=torch.device(device))
-        m.load_state_dict(state_dict=state_dict)
-
-        data_dict = cub.get_data_dict()
-        print("Creating Datasets")
-        train_dataset, val_dataset, test_dataset = cub.get_train_val_test_datasets(
-            data_dict
-        )
-        print("Creating Dataloaders")
-        train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(
-            train_dataset, val_dataset, test_dataset, batch_size=512
-        )
-
-        (
-            train_acc,
-            train_concept_acc,
-            train_label_predictions,
-            train_concept_predictions,
-        ) = evaluate.evaluate_model(m, train_loader, "train", device)
-
-        val_acc, val_concept_acc, val_label_predictions, val_concept_predictions = (
-            evaluate.evaluate_model(m, val_loader, "val", device)
-        )
-
-        test_acc, test_concept_acc, test_label_predictions, test_concept_predictions = (
-            evaluate.evaluate_model(m, test_loader, "test", device)
-        )
-
-        concept_prediction_mat_test = np.vstack(test_concept_predictions)
-        label_predictions_mat_test = np.vstack(test_label_predictions)
-        concept_prediction_mat_train = np.vstack(train_concept_predictions)
-        label_predictions_mat_train = np.vstack(train_label_predictions)
-        concept_prediction_mat_val = np.vstack(val_concept_predictions)
-        label_predictions_mat_val = np.vstack(val_label_predictions)
-
-        np.savez(
-            PRECOMPUTED_PATH,
-            first=concept_prediction_mat_test,
-            second=concept_prediction_mat_train,
-            third=concept_prediction_mat_val,
-            fourth=label_predictions_mat_test,
-            fifth=label_predictions_mat_train,
-            sixth=label_predictions_mat_val,
-        )
-        print("Predictions saved.")
-    else:
-        print("Precomputed predictions found.")
+    data_dict = cub.get_data_dict()
+    print("Creating Datasets")
+    train_dataset, val_dataset, test_dataset = cub.get_train_val_test_datasets(
+        data_dict
+    )
+    print("Creating Dataloaders")
+    train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(
+        train_dataset, val_dataset, test_dataset, batch_size=512
+    )
 
     # =========================
-    # Load Realignment Networks
+    # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
-
     NETWORKS = os.listdir(REALIGNMENT_PATH)
-    print(NETWORKS)
-    for realignment_network_filename in NETWORKS:
-        # extract model type from its path
-        model_type = re.search(
-            r"best_model_(.*?)_", realignment_network_filename
-        ).group(1)
+    for network in NETWORKS:
+        # =========================
+        # Load Realignment Network
+        # =========================
 
-        device = config["device"]
+        print(f"Testing {network}")
+        # gather config and model type
+        try:
+            with open(f'{REALIGNMENT_PATH}/{network}/config.json', 'r') as file:
+                config = json.load(file)
+        except FileNotFoundError:
+            print("The config file was not found.")
+        except json.JSONDecodeError:
+            print("Error decoding config JSON.")
+        
+        model_type = config["model"]
+
         print(f"Using device: {device}")
         (
             predicted_concepts,
@@ -141,5 +115,52 @@ if __name__ == "__main__":
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
         print(f"{model_type} model initialized.")
+
+        #load state dict
+        state_dict = torch.load(f'{REALIGNMENT_PATH}/{network}/best_model.pth', map_location=device)
+        concept_corrector.load_state_dict(state_dict)
+
+        # =========================
+        # Testing Loop
+        # =========================
+
+        # initialize loss function
+        criterion = nn.BCELoss()
+        print("Loss function initialized.")
+
+        test_loss = 0.0
+        test_total = 0
+        test_acc = 0.0
+
+        with torch.no_grad():
+            for images, concepts, labels in test_loader:
+                images = images.to(device)
+                concepts = concepts.to(device)
+                labels = labels.to(device)
+
+                # X->ConceptEncoder
+                _, predicted_concepts = model(images, return_concepts=True)
+                # ->RealignmentNetwork->...
+                realigned_concepts = concept_corrector(predicted_concepts)
+                # ->ClassPredictor
+                predicted_labels = class_predictor(realigned_concepts)
+
+                _, predicted = torch.max(predicted_labels.data, 1)
+
+                test_total += labels.size(0)
+                test_acc += (predicted == labels).sum().item()
+                test_loss += criterion(predicted_labels,labels)
+
+        test_acc = 100 * test_acc / test_total
+        test_loss = test_loss / test_total
+
+        print(test_loss, test_acc)
+
+
+
+        
+                
+
+
 
         
