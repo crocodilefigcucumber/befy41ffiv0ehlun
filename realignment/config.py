@@ -5,7 +5,7 @@ import torch
 # =========================
 config = {
     # Model Parameters
-    'model': 'Baseline',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
+    'model': 'MultiLSTM',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
     'hidden_size': 256,                 # Number of hidden units in LSTM
     'num_layers': 5,                    # Number of LSTM layers
     'input_format': 'original_and_intervened_inplace',  # Input format for the model

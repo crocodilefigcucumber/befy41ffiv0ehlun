@@ -13,7 +13,6 @@ from realignment.concept_corrector_models import (
     MultiLSTMConceptCorrector,
 )
 from realignment.data_loader import load_data, create_dataloaders
-from realignment.config import config
 
 import evaluate
 
@@ -22,7 +21,7 @@ import evaluate
 # =========================
 
 PRECOMPUTED_PATH = "data/cub/output/cub_prediction_matrices.npz"
-REALIGNMENT_PATH = "trained_models/"
+REALIGNMENT_PATH = "trained_models/CUB"
 
 if __name__ == "__main__":
     # =========================
