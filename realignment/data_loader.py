@@ -127,11 +127,17 @@ def create_dataloaders(predicted_concepts, groundtruth_concepts, config):
     # Split indices for 80/20 split
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
-    train_indices, val_indices = train_test_split(
+    train_indices, temp_indices = train_test_split(
         indices, 
-        test_size=0.2, 
+        test_size=0.3, 
         random_state=config['seed'], 
         shuffle=True
+    )
+    # Second, split temp into validation and test
+    val_indices, test_indices = train_test_split(
+        temp_indices, 
+        test_size=0.5,  # Half of 30% (15% each for val and test)
+        random_state=config['seed']
     )
 
     # Create DataLoaders
@@ -147,5 +153,11 @@ def create_dataloaders(predicted_concepts, groundtruth_concepts, config):
         shuffle=False, 
         pin_memory=True
     )
+    test_loader = DataLoader(
+    Subset(dataset, test_indices), 
+    batch_size=config['batch_size'], 
+    shuffle=False, 
+    pin_memory=True
+    )
 
-    return train_loader, val_loader
+    return train_loader, val_loader, test_loader

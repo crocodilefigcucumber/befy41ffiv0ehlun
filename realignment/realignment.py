@@ -16,7 +16,7 @@ def main():
     predicted_concepts, groundtruth_concepts, concept_to_cluster, input_size, output_size, number_clusters = load_data(config)
 
     # Create dataloaders
-    train_loader, val_loader = create_dataloaders(
+    train_loader, val_loader, test_loader = create_dataloaders(
         predicted_concepts, groundtruth_concepts, config
     )
     model_type = config['model']
