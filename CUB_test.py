@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 import numpy as np
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
 import multiprocessing as mp
 import os
@@ -70,18 +71,16 @@ if __name__ == "__main__":
     data = np.load(PRECOMPUTED_PATH)
     precomputed_concepts = data["first"]
 
-    data_dict = cub.get_data_dict()
-    print("Creating Datasets")
-    _, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
-    print("aslkdjasdkjalskd")
+    # data_dict = cub.get_data_dict()
+    # print("Creating Datasets")
+    #_, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
+    # print("aslkdjasdkjalskd")
 
-    with open('data.pkl', 'wb') as file:
-        pickle.dump(test_dataset, file)
-    print("hello")
-    1/0
-    test_labels = np.vstack([test_dataset[idx][-1] for idx in test_dataset.ids])
+    file_path = 'data.pkl'
+    with open(file_path, 'rb') as file:
+        test_labels = pickle.load(file)
 
-    test_data = Dataset(precomputed_concepts, test_labels)
+    test_data = list(zip(precomputed_concepts, test_labels))
     
     test_loader = DataLoader(
       test_data,
@@ -94,6 +93,7 @@ if __name__ == "__main__":
     # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
     NETWORKS = os.listdir(REALIGNMENT_PATH)
+    NETWORKS = [network for network in NETWORKS if network != "Baseline"]
     for network in NETWORKS:
         # =========================
         # Load Realignment Network
@@ -175,8 +175,8 @@ if __name__ == "__main__":
                 labels = labels.to(device)
 
                 # ->RealignmentNetwork->...
-                #realigned_concepts = concept_corrector(predicted_concepts)
-                realigned_concepts = predicted_concepts
+                realigned_concepts = concept_corrector(concepts)
+                #realigned_concepts = concepts
                 # ->ClassPredictor
                 predicted_labels = class_predictor(realigned_concepts)
 
@@ -184,7 +184,9 @@ if __name__ == "__main__":
 
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
-                test_loss += criterion(predicted_labels,labels)
+                # labels_one_hot = F.one_hot(labels.squeeze(), num_classes=num_classes).float()
+                # print((predicted_labels > 1).sum())
+                # test_loss += criterion(predicted_labels,labels_one_hot)
 
         test_acc = 100 * test_acc / test_total
         test_loss = test_loss / test_total
