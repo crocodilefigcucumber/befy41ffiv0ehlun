@@ -3,7 +3,7 @@ import torch
 # =========================
 # Hyperparameters Configuration
 # =========================
-example_config = {
+config = {
     # Model Parameters
     'model': 'Baseline',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
     'hidden_size': 256,                 # Number of hidden units in LSTM
