@@ -6,7 +6,7 @@ from config import config
 from concept_corrector_models import BaselineConceptCorrector, LSTMConceptCorrector, MultiLSTMConceptCorrector
 from train import train_model
 from eval import evaluate_baseline
-from data_loader import load_data, create_splits, create_dataloaders, CustomDataset
+from data_loader import load_data, create_dataloaders, CustomDataset
 # =========================
 # Main Function
 # =========================
@@ -14,12 +14,10 @@ def main():
     device = config['device']
     print(f"Using device: {device}")
     predicted_concepts, groundtruth_concepts, concept_to_cluster, input_size, output_size, number_clusters = load_data(config)
-    train_split, val_split = create_splits(config)
-
 
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(
-        predicted_concepts, groundtruth_concepts, train_split, val_split, config['batch_size']
+        predicted_concepts, groundtruth_concepts, config
     )
     model_type = config['model']
     print(f"Selected model type: {model_type}")

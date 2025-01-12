@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import TensorDataset, DataLoader, Dataset, Subset
-
+from sklearn.model_selection import train_test_split
 
 from config import config
 
@@ -25,7 +25,7 @@ def load_data(config):
         'CUB': {
             'predicted_file': 'data/cub/output/cub_prediction_matrices.npz',
             'cluster_file': 'experiments/clusters/CUB/CUB_clusters_idx.csv',
-            'groundtruth_file': 'data/cub/output/concepts_train.csv',
+            'groundtruth_file': 'data/cub/output/concepts_test.csv',
             'n_concept' : 312, 
         },
         'Awa2': {
@@ -70,7 +70,8 @@ def load_data(config):
     predicted_concepts = torch.tensor(predicted_data['first'], dtype=torch.float32)
     # Load GT concepts
     groundtruth_data = pd.read_csv(groundtruth_file)
-    groundtruth_data = groundtruth_data.iloc[:5794]
+    # Drop id column
+    groundtruth_data = groundtruth_data.drop(groundtruth_data.columns[0], axis=1) 
     groundtruth_concepts = torch.tensor(groundtruth_data.values,dtype=torch.float32)
 
     # Load cluster assignments
@@ -92,42 +93,6 @@ def load_data(config):
     number_clusters = len(cluster_assignments)
     return predicted_concepts, groundtruth_concepts, cluster_assignments, input_size, output_size, number_clusters
 
-def create_splits(config):
-    """
-    Splits the train data from train_test_split.txt into train and validation sets (80/20).
-    Args:
-        file_path (str): Path to the train_test_split.txt file.
-    Returns:
-        train_split (list): List of indices for the training set.
-        val_split (list): List of indices for the validation set.
-    """
-    split_paths = {
-        'CUB': {'file_path' : 'data/cub/CUB_200_2011/train_test_split.txt'
-                },
-        'Awa2': {'file_path' : ''
-                 },
-        'CelebA': {'file_path': ''
-                   },
-    }
-    dataset = config['dataset']
-    paths = split_paths[dataset]
-
-    file_path = paths['file_path']
-    data = pd.read_csv(file_path, sep='\s+', header=None, names=["id", "split"])
-    if dataset == 'CUB' :
-        data["id"] = data["id"] - 1
-    train_ids = data[data['split'] == 1]['id'].tolist()
-    
-    # Shuffle train IDs
-    shuffled_train_ids = np.random.permutation(train_ids)
-    # Calculate the split point for 80/20 split
-    n_train = int(len(train_ids) * 0.8)
-    
-    # Assign 80% to 'train' and 20% to 'val'
-    train_split = shuffled_train_ids[:n_train].tolist()
-    val_split = shuffled_train_ids[n_train:].tolist()
-    return train_split, val_split
-create_splits(config)
 class CustomDataset(Dataset):
     def __init__(self, predicted_concepts, groundtruth_concepts):
         self.predicted_concepts = predicted_concepts
@@ -142,9 +107,45 @@ class CustomDataset(Dataset):
             self.predicted_concepts[idx],
             self.groundtruth_concepts[idx],
         )
-    
-def create_dataloaders(predicted_concepts, groundtruth_concepts, train_split, val_split, batch_size):
+
+def create_dataloaders(predicted_concepts, groundtruth_concepts, config):
+    """
+    Creates DataLoaders for training and validation using an 80/20 split.
+
+    Parameters:
+        predicted_concepts (Tensor): Tensor of predicted concepts.
+        groundtruth_concepts (Tensor): Tensor of groundtruth concepts.
+        batch_size (int): Batch size for the DataLoader.
+        random_state (int): Seed for reproducibility. Default is 42.
+
+    Returns:
+        tuple: (train_loader, val_loader)
+    """
+    # Create the dataset
     dataset = CustomDataset(predicted_concepts, groundtruth_concepts)
-    train_loader = DataLoader(Subset(dataset, train_split), batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(Subset(dataset, val_split), batch_size=batch_size, shuffle=False)
+    
+    # Split indices for 80/20 split
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    train_indices, val_indices = train_test_split(
+        indices, 
+        test_size=0.2, 
+        random_state=config['seed'], 
+        shuffle=True
+    )
+
+    # Create DataLoaders
+    train_loader = DataLoader(
+        Subset(dataset, train_indices), 
+        batch_size=config['batch_size'], 
+        shuffle=True, 
+        pin_memory=True
+    )
+    val_loader = DataLoader(
+        Subset(dataset, val_indices), 
+        batch_size=config['batch_size'], 
+        shuffle=False, 
+        pin_memory=True
+    )
+
     return train_loader, val_loader
