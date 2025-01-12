@@ -3,9 +3,9 @@ import torch
 # =========================
 # Hyperparameters Configuration
 # =========================
-config = {
+example_config = {
     # Model Parameters
-    'model': 'LSTM',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
+    'model': 'Baseline',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
     'hidden_size': 256,                 # Number of hidden units in LSTM
     'num_layers': 5,                    # Number of LSTM layers
     'input_format': 'original_and_intervened_inplace',  # Input format for the model
@@ -18,7 +18,7 @@ config = {
     'learning_rate': 0.0001,            # Learning rate for optimizer
     'weight_decay': 1e-5,               # Weight decay (L2 regularization)
     'batch_size': 64,                   # Batch size for training
-    'epochs': 50,                        # Number of training epochs
+    'epochs': 100,                        # Number of training epochs
     'max_interventions': 10,            # Maximum number of interventions per trajectory
 
     # Intervention Policy
