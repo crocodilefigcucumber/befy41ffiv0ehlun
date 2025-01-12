@@ -1,10 +1,13 @@
 import torch
 from torch import nn
 import numpy as np
+from torch.utils.data import DataLoader, Dataset
 
 import multiprocessing as mp
 import os
 import json
+import pickle
+import csv
 
 from models import model
 from data import cub
@@ -24,18 +27,31 @@ import evaluate
 # =========================
 
 REALIGNMENT_PATH = "trained_models/CUB"
+PRECOMPUTED_PATH = 'data/cub/output/cub_prediction_matrices.npz'
+RESULTS_CSV = "results/CUB/test.csv"
+
+if not os.path.exists(RESULTS_CSV):
+    with open(RESULTS_CSV, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["model_type", "test_loss", "test_acc"])
+
+assert os.path.exists(PRECOMPUTED_PATH), (
+    f"Error: Required file '{PRECOMPUTED_PATH}' not found. "
+    "Please run the precomputation step first."
+)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
     # =========================
     # Load CBM
     # =========================
-    cub_model_path = "models/cub_model.pth"
+    cub_model_path = "models/cub_model_20250112_210439.pth"
     num_concepts = 312
     num_classes = 200
-    m = model.ConceptBottleneckModel(num_concepts, num_classes)
-    # Load the state dict
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Set small_decoder to true to load the older model (no date in path.)
+    m = model.ConceptBottleneckModel(num_concepts, num_classes, small_decoder=False)
+    # Load the state dict
     state_dict = torch.load(cub_model_path, map_location=torch.device(device))
     m.load_state_dict(state_dict=state_dict)
     m.eval()
@@ -43,14 +59,35 @@ if __name__ == "__main__":
     # extract class predictor
     class_predictor = m.class_predictor
 
+    # =========================
+    # Load Test Data
+    # =========================
+    num_cpus = mp.cpu_count()
+    num_workers = num_cpus - 2
+    print(f"Number of CPUs: {num_cpus}")
+    print(f"Number of workers: {num_workers}")
+
+    data = np.load(PRECOMPUTED_PATH)
+    precomputed_concepts = data["first"]
+
     data_dict = cub.get_data_dict()
     print("Creating Datasets")
-    train_dataset, val_dataset, test_dataset = cub.get_train_val_test_datasets(
-        data_dict
-    )
-    print("Creating Dataloaders")
-    train_loader, val_loader, test_loader = cub.get_train_val_test_loaders(
-        train_dataset, val_dataset, test_dataset, batch_size=512
+    _, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
+    print("aslkdjasdkjalskd")
+
+    with open('data.pkl', 'wb') as file:
+        pickle.dump(test_dataset, file)
+    print("hello")
+    1/0
+    test_labels = np.vstack([test_dataset[idx][-1] for idx in test_dataset.ids])
+
+    test_data = Dataset(precomputed_concepts, test_labels)
+    
+    test_loader = DataLoader(
+      test_data,
+      batch_size=128,
+      shuffle=False,  # No need to shuffle validation data
+      num_workers=num_workers
     )
 
     # =========================
@@ -133,15 +170,13 @@ if __name__ == "__main__":
         test_acc = 0.0
 
         with torch.no_grad():
-            for images, concepts, labels in test_loader:
-                images = images.to(device)
+            for concepts, labels in test_loader:
                 concepts = concepts.to(device)
                 labels = labels.to(device)
 
-                # X->ConceptEncoder
-                _, predicted_concepts = model(images, return_concepts=True)
                 # ->RealignmentNetwork->...
-                realigned_concepts = concept_corrector(predicted_concepts)
+                #realigned_concepts = concept_corrector(predicted_concepts)
+                realigned_concepts = predicted_concepts
                 # ->ClassPredictor
                 predicted_labels = class_predictor(realigned_concepts)
 
@@ -154,7 +189,10 @@ if __name__ == "__main__":
         test_acc = 100 * test_acc / test_total
         test_loss = test_loss / test_total
 
-        print(test_loss, test_acc)
+        print(f"test_loss:{test_loss}, test_acc:{test_acc}")
+        with open(RESULTS_CSV, mode="a", newline="") as file:  # open in append mode
+            writer = csv.writer(file)
+            writer.writerow([model_type, test_loss, test_acc])
 
 
 
