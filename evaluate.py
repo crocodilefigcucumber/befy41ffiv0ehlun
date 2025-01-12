@@ -1,7 +1,7 @@
 import torch
 
 # Evaluate model
-def evaluate_model(model, test_dataloader, device='cuda'):
+def evaluate_model(model, test_dataloader, split="test", device='cuda'):
     model.eval()  # Set to evaluation mode
     val_acc = 0.0
     concept_acc = 0.0
@@ -29,6 +29,9 @@ def evaluate_model(model, test_dataloader, device='cuda'):
     val_acc = 100 * val_acc / val_total
     concept_acc = 100 * concept_acc / concept_total
     #print(f'Validation Loss: {running_loss/len(train_loader):.4f}')
-    print(f'Test Class Label Accuracy: {val_acc:.2f}%')
-    print(f'Test Concept Accuracy: {concept_acc:.2f}%')
+    print(f'{split.capitalize()} Class Label Accuracy: {val_acc:.2f}%')
+    print(f'{split.capitalize()} Concept Accuracy: {concept_acc:.2f}%')
+    if split != "test":
+        print(f"Warning, evaluating predictions on {split}, "
+               "be careful if using for downstream applications.")
     return val_acc, concept_acc, label_predictions, concept_predictions
