@@ -5,8 +5,6 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, Dataset, Subset
 from sklearn.model_selection import train_test_split
 
-from realignment.config import config
-
 
 def load_data(config):
     """
