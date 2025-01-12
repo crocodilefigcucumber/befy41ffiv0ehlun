@@ -79,19 +79,21 @@ def load_data(config):
     concept_dict_melted = concept_dict.T.melt(ignore_index=False, var_name="concept").dropna(subset=['concept'])
     cluster_assignments = pd.crosstab(concept_dict_melted.index, concept_dict_melted['value'])
     cluster_assignments.index = range(len(cluster_assignments))
-    # Initialize the result list
-    result = [-1] * len(cluster_assignments.columns)  # Default to -1 for columns without a `1`
 
-    # Iterate over columns to find the 0-indexed row number of `1`s
+    # Build a list that maps each concept index -> cluster ID
+    concept_to_cluster = [-1] * len(cluster_assignments.columns)  # one cluster ID per concept
     for col_idx in range(len(cluster_assignments.columns)):
         for row_idx in range(len(cluster_assignments)):
             if cluster_assignments.iloc[row_idx, col_idx] == 1:
-                result[col_idx] = row_idx  # Assign the 0-indexed row number
-                break  # Stop after finding the first `1`
+                concept_to_cluster[col_idx] = row_idx
+                break
+    
     input_size = paths['n_concept']
     output_size = paths['n_concept']
     number_clusters = len(cluster_assignments)
-    return predicted_concepts, groundtruth_concepts, cluster_assignments, input_size, output_size, number_clusters
+    
+    return predicted_concepts, groundtruth_concepts, concept_to_cluster, input_size, output_size, number_clusters
+
 
 class CustomDataset(Dataset):
     def __init__(self, predicted_concepts, groundtruth_concepts):
