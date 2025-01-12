@@ -1,12 +1,16 @@
 import torch
 from torch import nn
 import os
+import json
 
 from config import config
 from concept_corrector_models import BaselineConceptCorrector, LSTMConceptCorrector, MultiLSTMConceptCorrector
 from train import train_model
 from eval import evaluate_baseline
 from data_loader import load_data, create_dataloaders, CustomDataset
+
+
+
 # =========================
 # Main Function
 # =========================
@@ -77,7 +81,19 @@ def main():
     if config['model'] != 'Baseline':
         train_model(concept_corrector, train_loader, val_loader, device, config, concept_to_cluster, adapter)
     else:
-        # For Baseline model, perform intervention and print replacements based on verbose flag
+
+        # For Baseline model, save the config dictionary
+        # Create directory structure for Baseline model
+        baseline_dir = os.path.join('trained_models', config['dataset'], 'Baseline')
+        os.makedirs(baseline_dir, exist_ok=True)
+        
+        # Save the config dictionary as config.json in Baseline directory
+        config_save_path = os.path.join(baseline_dir, 'config.json')
+        with open(config_save_path, 'w') as f:
+            json.dump(config, f, indent=4)
+        print(f"Configuration saved to {config_save_path}")
+        
+        # Perform intervention and evaluation for Baseline model
         print("\nBaseline Model Evaluation with Interventions:")
         verbose = config['verbose']
         # Evaluate on Training Data
@@ -87,6 +103,7 @@ def main():
         print("Intervening on Validation Data:")
         evaluate_baseline(concept_corrector, val_loader, device, config, concept_to_cluster, adapter, phase='Validation', verbose=verbose)
         print("Baseline model evaluation completed.")
+
 
 if __name__ == '__main__':
     main()
