@@ -25,6 +25,7 @@ from realignment.concept_corrector_models import (
 
 from realignment.data_loader import load_data, create_dataloaders
 from realignment.realign_concepts import realign_concepts
+from realignment.intervention_utils import ucp
 
 # =========================
 # Main Function
@@ -45,10 +46,12 @@ assert os.path.exists(PRECOMPUTED_PATH), (
 )
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def get_best_model_id(results_csv):
     results = pd.read_csv(results_csv)
-    min_row = results[results["val_loss"]==results["val_loss"].min()]
+    min_row = results[results["val_loss"] == results["val_loss"].min()]
     return min_row["run_idx"].iloc[0]
+
 
 if __name__ == "__main__":
     # =========================
@@ -87,16 +90,16 @@ if __name__ == "__main__":
 
     file_path = "data.pkl"
     with open(file_path, "rb") as file:
-        test_labels = pickle.load(file)
+        test_labels,test_concepts = pickle.load(file)
 
-    test_data = list(zip(precomputed_concepts, test_labels))
+    test_data = list(zip(precomputed_concepts, test_concepts, test_labels))
 
     test_loader = DataLoader(
         test_data,
         batch_size=128,
         shuffle=False,  # No need to shuffle validation data
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=True,
     )
 
     # =========================
@@ -112,9 +115,11 @@ if __name__ == "__main__":
         # gather config and model type
         val_results = f"{REALIGNMENT_PATH}/{network}/results.csv"
         run_idx = get_best_model_id(val_results)
-        
+
         try:
-            with open(f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_config.json", "r") as file:
+            with open(
+                f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_config.json", "r"
+            ) as file:
                 config = json.load(file)
         except FileNotFoundError:
             print("The config file was not found.")
@@ -208,7 +213,8 @@ if __name__ == "__main__":
         # load state dict if not Baseline, Baseline doesn't need to load weights
         if network != "Baseline":
             state_dict = torch.load(
-                f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth", map_location=device
+                f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth",
+                map_location=device,
             )
             print("Loading state dict.")
             concept_corrector.load_state_dict(state_dict)
@@ -225,20 +231,30 @@ if __name__ == "__main__":
         test_acc = 0.0
 
         with torch.no_grad():
-            for concepts, labels in test_loader:
+            for concepts, ground_truth, labels in test_loader:
                 concepts = concepts.to(device)
                 labels = labels.to(device)
+                ground_truth.to(device)
                 labels = labels.squeeze()
 
                 # ->RealignmentNetwork->...
                 realigned_concepts = realign_concepts(
-                    concept_corrector, concepts, device, config
+                    concept_corrector=concept_corrector,
+                    concept_vector=concepts,
+                    groundtruth_concepts=ground_truth,
+                    intervention_policy=ucp,
+                    device=device,
+                    config=config,
+                    concept_to_cluster=None,
+                    verbose=False,
                 )
                 # ->ClassPredictor
                 predicted_labels = class_predictor(realigned_concepts)
                 _, predicted = torch.max(predicted_labels.data, 1)
 
-                print(f"Change: {(concepts[0]-realigned_concepts[0]).abs()}, Predict:{predicted[0]}")
+                print(
+                    f"Change: {(concepts[0]-realigned_concepts[0]).abs()}, Predict:{predicted[0]}"
+                )
 
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
