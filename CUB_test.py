@@ -37,7 +37,7 @@ RESULTS_CSV = "results/CUB/test.csv"
 if not os.path.exists(RESULTS_CSV):
     with open(RESULTS_CSV, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["model_type", "test_loss", "test_acc"])
+        writer.writerow(["model_type", "test_acc"])
 
 assert os.path.exists(PRECOMPUTED_PATH), (
     f"Error: Required file '{PRECOMPUTED_PATH}' not found. "
@@ -64,6 +64,7 @@ if __name__ == "__main__":
     state_dict = torch.load(cub_model_path, map_location=torch.device(device))
     m.load_state_dict(state_dict=state_dict)
     m.eval()
+    m.to(device)
 
     # extract class predictor
     class_predictor = m.class_predictor
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     # =========================
     # Load Test Data
     # =========================
-    num_cpus = mp.cpu_count()
+    num_cpus = 5
     num_workers = num_cpus - 2
     print(f"Number of CPUs: {num_cpus}")
     print(f"Number of workers: {num_workers}")
@@ -95,6 +96,7 @@ if __name__ == "__main__":
         batch_size=128,
         shuffle=False,  # No need to shuffle validation data
         num_workers=num_workers,
+        pin_memory=True
     )
 
     # =========================
@@ -208,6 +210,7 @@ if __name__ == "__main__":
             state_dict = torch.load(
                 f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth", map_location=device
             )
+            print("Loading state dict.")
             concept_corrector.load_state_dict(state_dict)
 
         # =========================
@@ -218,7 +221,6 @@ if __name__ == "__main__":
         criterion = nn.BCELoss()
         print("Loss function initialized.")
 
-        test_loss = 0.0
         test_total = 0
         test_acc = 0.0
 
@@ -236,13 +238,14 @@ if __name__ == "__main__":
                 predicted_labels = class_predictor(realigned_concepts)
                 _, predicted = torch.max(predicted_labels.data, 1)
 
+                print(f"Change: {(concepts[0]-realigned_concepts[0]).abs()}, Predict:{predicted[0]}")
+
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
 
         test_acc = 100 * test_acc / test_total
-        test_loss = test_loss / test_total
 
-        print(f"test_loss:{test_loss}, test_acc:{test_acc}")
+        print(f"test_acc:{test_acc}")
         with open(RESULTS_CSV, mode="a", newline="") as file:  # open in append mode
             writer = csv.writer(file)
-            writer.writerow([model_type, test_loss, test_acc])
+            writer.writerow([model_type, test_acc])

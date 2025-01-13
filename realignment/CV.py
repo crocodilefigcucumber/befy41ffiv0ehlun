@@ -29,12 +29,11 @@ grid = list(
 
 
 def CV(config, grid):
-    # Initialize CSV with headers if file doesn't exist
+    # Initialize CSV with headers
     results_csv = f"trained_models/{config['dataset']}/{config['model']}/results.csv"
-    if not os.path.exists(results_csv):
-        with open(results_csv, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["run_idx", "hidden_size", "hidden_layers", "val_loss"])
+    with open(results_csv, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["run_idx", "hidden_size", "hidden_layers", "val_loss"])
 
     for run_idx, (hidden_size, hidden_layers) in enumerate(grid):
         # Update configuration with current hyperparameters
@@ -231,7 +230,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # If a specific model is provided, use only that; otherwise, iterate over all models
+    # If a specific model is provided, use only that else iterate over all models
     selected_models = [args.model] if args.model else model_types
 
     # Loop over selected models
