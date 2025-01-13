@@ -173,19 +173,17 @@ if __name__ == "__main__":
             for concepts, labels in test_loader:
                 concepts = concepts.to(device)
                 labels = labels.to(device)
+                labels = labels.squeeze()
 
                 # ->RealignmentNetwork->...
                 realigned_concepts = concept_corrector(concepts)
-                #realigned_concepts = concepts
                 # ->ClassPredictor
                 predicted_labels = class_predictor(realigned_concepts)
-
                 _, predicted = torch.max(predicted_labels.data, 1)
 
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
                 # labels_one_hot = F.one_hot(labels.squeeze(), num_classes=num_classes).float()
-                # print((predicted_labels > 1).sum())
                 # test_loss += criterion(predicted_labels,labels_one_hot)
 
         test_acc = 100 * test_acc / test_total
