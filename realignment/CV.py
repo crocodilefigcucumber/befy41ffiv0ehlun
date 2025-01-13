@@ -3,6 +3,8 @@ from torch import nn
 import os
 import json
 import itertools
+import argparse
+
 from config import config as default_config
 from concept_corrector_models import (
     BaselineConceptCorrector,
@@ -218,7 +220,22 @@ def main():
         "MultiGRU",
         "MultiRNN",
     ]
-    for model in model_types:
+    
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Run CV for different model types.")
+    parser.add_argument(
+        "--model",
+        type=str,
+        choices=model_types,
+        help=f"Specify a model type from the list: {', '.join(model_types)}. If not provided, all models will be run."
+    )
+    args = parser.parse_args()
+
+    # If a specific model is provided, use only that; otherwise, iterate over all models
+    selected_models = [args.model] if args.model else model_types
+
+    # Loop over selected models
+    for model in selected_models:
         config = default_config.copy()
         config["model"] = model
         CV(config, grid)

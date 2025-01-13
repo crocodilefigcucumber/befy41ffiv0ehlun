@@ -111,3 +111,5 @@ data/cub/CUB_200_2011/*
 
 #for hacky stuff
 data.pkl
+logs
+logs/*
