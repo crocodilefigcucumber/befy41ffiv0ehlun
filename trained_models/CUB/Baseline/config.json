@@ -1,6 +1,6 @@
 {
     "model": "Baseline",
-    "hidden_size": 128,
+    "hidden_size": 256,
     "num_layers": 5,
     "input_format": "original_and_intervened_inplace",
     "dataset": "CUB",
