@@ -85,15 +85,6 @@ if __name__ == "__main__":
     test_labels = data["eighth"]
     test_concepts = data["seventh"]
 
-    # data_dict = cub.get_data_dict()
-    # print("Creating Datasets")
-    # _, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
-    # print("aslkdjasdkjalskd")
-
-    file_path = "data.pkl"
-    with open(file_path, "rb") as file:
-        test_labels,test_concepts = pickle.load(file)
-
     test_data = list(zip(precomputed_concepts, test_concepts, test_labels))
 
     test_loader = DataLoader(
@@ -225,10 +216,6 @@ if __name__ == "__main__":
         # Testing Loop
         # =========================
 
-        # initialize loss function
-        criterion = nn.BCELoss()
-        print("Loss function initialized.")
-
         test_total = 0
         test_acc = 0.0
 
@@ -251,14 +238,13 @@ if __name__ == "__main__":
                     verbose=False,
                 )
                 # ->ClassPredictor
-                #predicted_labels = class_predictor(realigned_concepts)
-                predicted_labels = class_predictor(ground_truth)
+                predicted_labels = class_predictor(realigned_concepts)
 
                 _, predicted = torch.max(predicted_labels.data, 1)
 
-                print(
-                    f"Change: {(concepts[0]-realigned_concepts[0]).abs()}, Predict:{predicted[0]}"
-                )
+                # print(
+                #     f"Change: {(concepts[0]-realigned_concepts[0]).abs()}, Predict:{predicted[0]}"
+                # )
 
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
