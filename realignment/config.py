@@ -5,7 +5,9 @@ import torch
 # =========================
 config = {
     # Model Parameters
-    'model': 'MultiLSTM',                # Model type: 'LSTM', 'MultiLSTM', or 'Baseline'
+    # 'Baseline', 'LSTM', 'MultiLSTM', 'GRU', 'RNN', 'MultiGRU', 'MultiRNN'
+    'model': 'MultiRNN',
+
     'hidden_size': 256,                 # Number of hidden units in LSTM
     'num_layers': 5,                    # Number of LSTM layers
     'input_format': 'original_and_intervened_inplace',  # Input format for the model
@@ -17,8 +19,8 @@ config = {
     # Training Parameters
     'learning_rate': 0.0001,            # Learning rate for optimizer
     'weight_decay': 1e-5,               # Weight decay (L2 regularization)
-    'batch_size': 64,                   # Batch size for training
-    'epochs': 100,                        # Number of training epochs
+    'batch_size': 128,                   # Batch size for training
+    'epochs': 50,                        # Number of training epochs
     'max_interventions': 10,            # Maximum number of interventions per trajectory
 
     # Intervention Policy
@@ -26,7 +28,7 @@ config = {
     'intervention_policy_validate': 'ucp',  # Policy for validation interventions
 
     # Verbosity
-    'verbose': True,                    # If True, prints detailed intervention information
+    'verbose': False,                    # If True, prints detailed intervention information
 
     # Device Configuration
     'device': 'cuda' if torch.cuda.is_available() else 'cpu',  # Automatically select 'cuda' if available
