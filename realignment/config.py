@@ -28,7 +28,7 @@ config = {
     'intervention_policy_validate': 'ucp',  # Policy for validation interventions
 
     # Verbosity
-    'verbose': True,                    # If True, prints detailed intervention information
+    'verbose': False,                    # If True, prints detailed intervention information
 
     # Device Configuration
     'device': 'cuda' if torch.cuda.is_available() else 'cpu',  # Automatically select 'cuda' if available

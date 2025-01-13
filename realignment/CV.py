@@ -179,7 +179,7 @@ def CV(config, grid):
                 verbose=verbose,
             )
             print("Intervening on Validation Data:")
-            evaluate_baseline(
+            val_loss = evaluate_baseline(
                 concept_corrector,
                 val_loader,
                 device,

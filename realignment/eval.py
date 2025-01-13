@@ -98,3 +98,4 @@ def evaluate_baseline(concept_corrector: nn.Module, loader: DataLoader, device: 
             total_loss += loss.item()
     average_loss = total_loss / len(loader)
     print(f"{phase} Loss for Baseline model: {average_loss:.4f}")
+    return average_loss
