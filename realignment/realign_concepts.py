@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from intervention_utils import intervene
+from realignment.intervention_utils import intervene
 
 def realign_concepts(
     concept_corrector: nn.Module,
