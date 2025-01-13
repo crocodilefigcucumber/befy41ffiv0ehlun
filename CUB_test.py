@@ -109,8 +109,7 @@ if __name__ == "__main__":
         print(f"Testing {network}")
         # gather config and model type
         val_results = f"{REALIGNMENT_PATH}/{network}/results.csv"
-        if network != "Baseline":
-            run_idx = get_best_model_id(val_results)
+        run_idx = get_best_model_id(val_results)
         
         try:
             with open(f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_config.json", "r") as file:
@@ -204,11 +203,12 @@ if __name__ == "__main__":
             raise ValueError(f"Unsupported model type: {model_type}")
         print(f"{model_type} model initialized.")
 
-        # load state dict
-        state_dict = torch.load(
-            f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth", map_location=device
-        )
-        concept_corrector.load_state_dict(state_dict)
+        # load state dict if not Baseline, Baseline doesn't need to load weights
+        if network != "Baseline":
+            state_dict = torch.load(
+                f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth", map_location=device
+            )
+            concept_corrector.load_state_dict(state_dict)
 
         # =========================
         # Testing Loop
@@ -238,8 +238,6 @@ if __name__ == "__main__":
 
                 test_total += labels.size(0)
                 test_acc += (predicted == labels).sum().item()
-                # labels_one_hot = F.one_hot(labels.squeeze(), num_classes=num_classes).float()
-                # test_loss += criterion(predicted_labels,labels_one_hot)
 
         test_acc = 100 * test_acc / test_total
         test_loss = test_loss / test_total

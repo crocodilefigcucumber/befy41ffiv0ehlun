@@ -160,7 +160,7 @@ def CV(config, grid):
         else:
             baseline_dir = os.path.join("trained_models", config["dataset"], "Baseline")
             os.makedirs(baseline_dir, exist_ok=True)
-            config_save_path = os.path.join(baseline_dir, "config.json")
+            config_save_path = os.path.join(baseline_dir, f"run_{run_idx}_config.json")
             with open(config_save_path, "w") as f:
                 json.dump(config, f, indent=4)
             print(f"Configuration saved to {config_save_path}")
