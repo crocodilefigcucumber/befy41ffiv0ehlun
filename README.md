@@ -3,10 +3,10 @@
 An ETH Project for the [Deep Learning](https://da.inf.ethz.ch/teaching/2024/DeepLearning/) module in 2024.
 
 ## Contributors
-Michał Mikuta, 
-Mikael Makonnen,
-Sari Issa and
-Max Buckley 
+Michał Mikuta (19-948-124), 
+Mikael Makonnen (23-950-900),
+Sari Issa (18-745-273) and
+Max Buckley (22-906-853) 
 
 ## Datasets
 
