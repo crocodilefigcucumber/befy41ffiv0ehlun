@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
+import pandas as pd
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
@@ -11,24 +12,26 @@ import pickle
 import csv
 
 from models import model
-from data import cub
 
 from realignment.concept_corrector_models import (
     BaselineConceptCorrector,
     LSTMConceptCorrector,
     MultiLSTMConceptCorrector,
+    GRUConceptCorrector,
+    RNNConceptCorrector,
+    MultiGRUConceptCorrector,
+    MultiRNNConceptCorrector,
 )
 
 from realignment.data_loader import load_data, create_dataloaders
-
-import evaluate
+from realignment.realign_concepts import realign_concepts
 
 # =========================
 # Main Function
 # =========================
 
 REALIGNMENT_PATH = "trained_models/CUB"
-PRECOMPUTED_PATH = 'data/cub/output/cub_prediction_matrices.npz'
+PRECOMPUTED_PATH = "data/cub/output/cub_prediction_matrices.npz"
 RESULTS_CSV = "results/CUB/test.csv"
 
 if not os.path.exists(RESULTS_CSV):
@@ -41,6 +44,11 @@ assert os.path.exists(PRECOMPUTED_PATH), (
     "Please run the precomputation step first."
 )
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def get_best_model_id(results_csv):
+    results = pd.read_csv(results_csv)
+    min_row = results[results["val_loss"]==results["val_loss"].min()]
+    return min_row["run_idx"].iloc[0]
 
 if __name__ == "__main__":
     # =========================
@@ -73,27 +81,27 @@ if __name__ == "__main__":
 
     # data_dict = cub.get_data_dict()
     # print("Creating Datasets")
-    #_, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
+    # _, _, test_dataset = cub.get_train_val_test_datasets(data_dict)
     # print("aslkdjasdkjalskd")
 
-    file_path = 'data.pkl'
-    with open(file_path, 'rb') as file:
+    file_path = "data.pkl"
+    with open(file_path, "rb") as file:
         test_labels = pickle.load(file)
 
     test_data = list(zip(precomputed_concepts, test_labels))
-    
+
     test_loader = DataLoader(
-      test_data,
-      batch_size=128,
-      shuffle=False,  # No need to shuffle validation data
-      num_workers=num_workers
+        test_data,
+        batch_size=128,
+        shuffle=False,  # No need to shuffle validation data
+        num_workers=num_workers,
     )
 
     # =========================
     # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
     NETWORKS = os.listdir(REALIGNMENT_PATH)
-    NETWORKS = [network for network in NETWORKS if network != "Baseline"]
+    NETWORKS = [network for network in NETWORKS if network != "Baseline"] # we will handle the Baseline model seperately
     for network in NETWORKS:
         # =========================
         # Load Realignment Network
@@ -101,14 +109,18 @@ if __name__ == "__main__":
 
         print(f"Testing {network}")
         # gather config and model type
+        val_results = f"{REALIGNMENT_PATH}/{network}/results.csv"
+        if network != "Baseline":
+            run_idx = get_best_model_id(val_results)
+        
         try:
-            with open(f'{REALIGNMENT_PATH}/{network}/config.json', 'r') as file:
+            with open(f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_config.json", "r") as file:
                 config = json.load(file)
         except FileNotFoundError:
             print("The config file was not found.")
         except json.JSONDecodeError:
             print("Error decoding config JSON.")
-        
+
         model_type = config["model"]
 
         print(f"Using device: {device}")
@@ -149,12 +161,54 @@ if __name__ == "__main__":
                 output_size=output_size,
                 input_format=config["input_format"],
             ).to(device)
+        elif model_type == "GRU":
+            ConceptCorrectorClass = GRUConceptCorrector
+            concept_corrector = ConceptCorrectorClass(
+                input_size=input_size,
+                hidden_size=config["hidden_size"],
+                num_layers=config["num_layers"],
+                output_size=output_size,
+                input_format=config["input_format"],
+            ).to(device)
+        elif model_type == "RNN":
+            ConceptCorrectorClass = RNNConceptCorrector
+            concept_corrector = ConceptCorrectorClass(
+                input_size=input_size,
+                hidden_size=config["hidden_size"],
+                num_layers=config["num_layers"],
+                output_size=output_size,
+                input_format=config["input_format"],
+            ).to(device)
+        elif model_type == "MultiGRU":
+            ConceptCorrectorClass = MultiGRUConceptCorrector
+            concept_corrector = ConceptCorrectorClass(
+                input_size=input_size,
+                hidden_size=config["hidden_size"],
+                num_layers=config["num_layers"],
+                output_size=output_size,
+                m_clusters=number_clusters,
+                concept_to_cluster=concept_to_cluster,
+                input_format=config["input_format"],
+            ).to(device)
+        elif model_type == "MultiRNN":
+            ConceptCorrectorClass = MultiRNNConceptCorrector
+            concept_corrector = ConceptCorrectorClass(
+                input_size=input_size,
+                hidden_size=config["hidden_size"],
+                num_layers=config["num_layers"],
+                output_size=output_size,
+                m_clusters=number_clusters,
+                concept_to_cluster=concept_to_cluster,
+                input_format=config["input_format"],
+            ).to(device)
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
         print(f"{model_type} model initialized.")
 
-        #load state dict
-        state_dict = torch.load(f'{REALIGNMENT_PATH}/{network}/best_model.pth', map_location=device)
+        # load state dict
+        state_dict = torch.load(
+            f"{REALIGNMENT_PATH}/{network}/run_{run_idx}_best_model.pth", map_location=device
+        )
         concept_corrector.load_state_dict(state_dict)
 
         # =========================
@@ -176,7 +230,9 @@ if __name__ == "__main__":
                 labels = labels.squeeze()
 
                 # ->RealignmentNetwork->...
-                realigned_concepts = concept_corrector(concepts)
+                realigned_concepts = realign_concepts(
+                    concept_corrector, concepts, device, config
+                )
                 # ->ClassPredictor
                 predicted_labels = class_predictor(realigned_concepts)
                 _, predicted = torch.max(predicted_labels.data, 1)
@@ -193,12 +249,6 @@ if __name__ == "__main__":
         with open(RESULTS_CSV, mode="a", newline="") as file:  # open in append mode
             writer = csv.writer(file)
             writer.writerow([model_type, test_loss, test_acc])
-
-
-
-        
-                
-
-
-
-        
+    
+    network = "Baseline"
+    
