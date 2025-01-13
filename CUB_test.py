@@ -82,6 +82,8 @@ if __name__ == "__main__":
 
     data = np.load(PRECOMPUTED_PATH)
     precomputed_concepts = data["first"]
+    test_labels = data["eighth"]
+    test_concepts = data["seventh"]
 
     # data_dict = cub.get_data_dict()
     # print("Creating Datasets")
