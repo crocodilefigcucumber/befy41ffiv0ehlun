@@ -16,11 +16,19 @@ from concept_corrector_models import (
 from train import train_model
 from eval import evaluate_baseline
 from data_loader import load_data, create_dataloaders, CustomDataset
+import csv
 
 GRID_SEARCH_PARAMS={"hidden_size":[64,128,256], "hidden_layers":[1,3,5]}
 grid = list(itertools.product(GRID_SEARCH_PARAMS["hidden_size"], GRID_SEARCH_PARAMS["hidden_layers"]))
 
 def CV(config, grid):
+    # Initialize CSV with headers if file doesn't exist
+    results_csv = f"trained_models/{config["dataset"]}/{config["model_type"]}/results.csv"
+    if not os.path.exists(results_csv):
+        with open(results, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["run_idx", "hidden_size", "hidden_layers", "val_loss"])
+
     for run_idx, (hidden_size, hidden_layers) in enumerate(grid):
         # Update configuration with current hyperparameters
         config['hidden_size'] = hidden_size
@@ -124,7 +132,7 @@ def CV(config, grid):
         
         # Train the model if not Baseline
         if config['model'] != 'Baseline':
-            train_model(concept_corrector, train_loader, val_loader, device, config, concept_to_cluster, adapter, run_idx)
+            val_loss = train_model(concept_corrector, train_loader, val_loader, device, config, concept_to_cluster, adapter, run_idx)
         else:
             baseline_dir = os.path.join('trained_models', config['dataset'], 'Baseline')
             os.makedirs(baseline_dir, exist_ok=True)
@@ -141,6 +149,16 @@ def CV(config, grid):
             evaluate_baseline(concept_corrector, val_loader, device, config, concept_to_cluster, adapter, phase='Validation', verbose=verbose)
             print("Baseline model evaluation completed.")
         
+        # Append results to CSV
+        with open(results_csv, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                run_idx,
+                config['hidden_size'],
+                config['num_layers'],
+                val_loss if val_loss is not None else "N/A",
+            ])
+        print(f"Appended results to {results_csv} for run {run_idx}.")
 
 # =========================
 # Main Function

@@ -204,3 +204,6 @@ def train_model(
         print(f"Best model saved to {final_model_path}")
     else:
         print("No improvement observed during training. Model not saved.")
+
+    # Return best validation loss
+    return best_val_loss
