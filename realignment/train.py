@@ -24,7 +24,8 @@ def train_model(
     device: torch.device,
     config: dict,
     concept_to_cluster: list,
-    adapter: nn.Module=None
+    adapter: nn.Module=None, 
+    run_idx=0
 ):
     optimizer = optim.Adam(
         concept_corrector.parameters(),
@@ -46,7 +47,7 @@ def train_model(
     # model saving
     trained_models_dir = os.path.join('trained_models', config['dataset'], config['model'])
     os.makedirs(trained_models_dir, exist_ok=True)
-    final_model_filename = "best_model.pth"
+    final_model_filename = f"run_{run_idx}_best_model.pth"
     final_model_path = os.path.join(trained_models_dir, final_model_filename)
     
     # Save the config dictionary as config.json
