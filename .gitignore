@@ -96,7 +96,6 @@ attributes.txt
 CUB_200_2011/
 
 # Slurm jobscripts
-jobscript*
 slurm*
 
 # Thes are all the data directories.
@@ -110,5 +109,4 @@ data/awa2/AwA2-data.zip
 data/cub/CUB_200_2011/*
 
 #for logs
-logs
 logs/*
