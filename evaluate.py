@@ -38,7 +38,7 @@ def evaluate_model(model, test_dataloader, split="test", device='cuda'):
     val_acc = 100 * val_acc / val_total
     concept_acc = 100 * concept_acc / concept_total
     #print(f'Validation Loss: {running_loss/len(train_loader):.4f}')
-    print(f'{split.capitalize()} Class Label Accuracy: {val_acc:.2f}%')
+    print(f'{split.capitalize()} Class Label Accuracy (End to End): {val_acc:.2f}%')
     print(f'{split.capitalize()} Concept Accuracy: {concept_acc:.2f}%')
     if split != "test":
         print(f"Warning, evaluating predictions on {split}, "

@@ -10,7 +10,7 @@ import evaluate
 
 if __name__ == "__main__":
     print("Hello you bird lover you :D")
-    cub_model_path = "models/cub_model_20250112_210439.pth"
+    cub_model_path = "models/cub_model_20250113_212453.pth"
     num_concepts = 312
     num_classes = 200
     # Set small_decoder to true to load the older model (no date in path.
