@@ -1,42 +1,66 @@
 import torch
 from torch import nn
 
+from intervention_utils import intervene
 
 def realign_concepts(
     concept_corrector: nn.Module,
     concept_vector: torch.Tensor,
+    groundtruth_concepts: torch.Tensor,
     device: torch.device,
     config: dict,
-    concept_to_cluster: list = None
+    concept_to_cluster: list,
+    intervention_policy,  # e.g. ucp(...)
+    verbose: bool = False
 ) -> torch.Tensor:
     """
-    Given a trained concept corrector model (LSTM, GRU, RNN, or multi-cluster variant)
-    OR the BaselineConceptCorrector (not actually trained),
-    and an initial predicted concept vector, return the realigned concept vector.
-    
+    Perform multi-step realignment on 'concept_vector' at inference time,
+    replicating the same iterative "forward -> intervene -> forward -> intervene"
+    logic used in training (sample_trajectory).
+
     Args:
-        concept_corrector (nn.Module): One of the following:
+        concept_corrector (nn.Module):
             - BaselineConceptCorrector
-            - LSTMConceptCorrector, MultiLSTMConceptCorrector
-            - GRUConceptCorrector, MultiGRUConceptCorrector
-            - RNNConceptCorrector, MultiRNNConceptCorrector
-        concept_vector (torch.Tensor): The initial predicted concept vector(s).
-            Shape can be (batch_size, num_concepts).
-        device (torch.device): The device on which computations will be done (CPU or CUDA).
-        config (dict): Contains 'model' and possibly 'input_format' or other config options.
-        concept_to_cluster (list, optional): Only needed for multi-cluster models.
+            - LSTMConceptCorrector / MultiLSTMConceptCorrector
+            - GRUConceptCorrector / MultiGRUConceptCorrector
+            - RNNConceptCorrector / MultiRNNConceptCorrector
+          Must be already trained or loaded from a checkpoint.
+
+        concept_vector (torch.Tensor): Initial predicted concept vector(s).
+            Shape: (batch_size, num_concepts).
+
+        groundtruth_concepts (torch.Tensor): Ground-truth concepts for these samples.
+            Shape: (batch_size, num_concepts).
+
+        device (torch.device): CPU or CUDA device.
+
+        config (dict): Should contain:
+            - 'model' (str): which model type we have
+            - 'max_interventions' (int): how many forward->intervene steps to run
+            - possibly other keys like 'verbose' or 'input_format'.
+
+        concept_to_cluster (list): For multi-cluster models, cluster assignment for each concept.
+            Single-cluster or Baseline models can ignore this.
+
+        intervention_policy (Callable): a function like ucp(...) or random_intervention_policy(...)
+            that chooses which concept(s) to intervene on at each step.
+
+        verbose (bool): if True, we print out which concepts get replaced each step
+            (just as your code does in 'intervene(..., verbose=True)').
 
     Returns:
-        realigned_vector (torch.Tensor): The realigned concept vector(s),
-            of the same shape as `concept_vector`.
+        torch.Tensor: final realigned concept vectors, shape (batch_size, num_concepts),
+                      after up to 'max_interventions' steps of partial updates.
     """
     model_type = config['model']
+    max_interventions = config['max_interventions']
 
-    # Make sure concept_vector is on the correct device
+    # Move input Tensors to device
     concept_vector = concept_vector.to(device)
+    groundtruth_concepts = groundtruth_concepts.to(device)
 
-    # 1) Determine hidden states if needed
-    batch_size = concept_vector.size(0)  # could be 1 or more
+    # Prepare hidden states if needed
+    batch_size = concept_vector.size(0)
 
     if model_type in ['MultiLSTM', 'MultiGRU', 'MultiRNN']:
         hidden_states = concept_corrector.prepare_initial_hidden(batch_size, device)
@@ -50,40 +74,54 @@ def realign_concepts(
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    # 2) Prepare placeholder for 'already_intervened_concepts' and 'original_predictions'
-    #    We can assume no interventions yet: everything is 0 in 'already_intervened_concepts'.
-    already_intervened = torch.zeros_like(concept_vector).to(device)    # shape: (batch_size, num_concepts)
-    original_predictions = concept_vector.clone().detach().to(device)  # same shape
+    # track which concepts were intervened on so far
+    already_intervened_concepts = torch.zeros_like(concept_vector).to(device)
 
-    # 3) Call forward_single_timestep or forward to get the realigned concepts
-    if model_type in ['MultiLSTM', 'MultiGRU', 'MultiRNN']:
-        # multi-cluster variants
-        out, hidden_states = concept_corrector.forward_single_timestep(
-            concept_vector,                  # inputs
-            already_intervened,             # already_intervened_concepts
-            original_predictions,           # original_predictions
-            hidden_states,                  # hidden states list
-            selected_clusters=None,         # not doing any selective intervention
-            selected_cluster_ids=None
-        )
-    elif model_type in ['LSTM', 'GRU', 'RNN']:
-        # single-cluster variants
-        out, hidden = concept_corrector.forward_single_timestep(
-            concept_vector,
-            already_intervened,
-            original_predictions,
-            hidden
-        )
-    elif model_type == 'Baseline':
-        # Baseline doesn't do realignment; it only merges concept_vector with "original_predictions"
-        # using the mask. Because there's no realignment, the model's forward just returns:
-        #   output = already_intervened * concept_vector + (1 - already_intervened) * original_predictions
-        out = concept_corrector.forward_single_timestep(
-            concept_vector,
-            already_intervened,
-            original_predictions
-        )
-    else:
-        raise ValueError(f"Unsupported model type: {model_type}")
+    # original_predictions is unmodified CBM output
+    # that the corrector can overwrite partially each step
+    original_predictions = concept_vector.clone().detach()
 
-    return out
+    # current concept vector we keep updating
+    concepts = concept_vector.clone().detach().to(device)
+
+    # Perform up to max_interventions iteration
+    for step in range(max_interventions):
+
+        # 1) Forward single timestep
+        if model_type in ['MultiLSTM', 'MultiGRU', 'MultiRNN']:
+            out, hidden_states = concept_corrector.forward_single_timestep(
+                concepts,
+                already_intervened_concepts,
+                original_predictions,
+                hidden_states
+            )
+        elif model_type in ['LSTM', 'GRU', 'RNN']:
+            out, hidden = concept_corrector.forward_single_timestep(
+                concepts,
+                already_intervened_concepts,
+                original_predictions,
+                hidden
+            )
+        else:  # Baseline
+            out = concept_corrector.forward_single_timestep(
+                concepts,
+                already_intervened_concepts,
+                original_predictions
+            )
+
+        # Update concepts with corrector's realigned output
+        concepts = out
+
+        # 2) Intervene on whichever concept(s) policy says to fix (just like in sample_trajectory)
+        concepts, already_intervened_concepts = intervene(
+            concepts,                        # current concept predictions
+            already_intervened_concepts,     # which are already replaced
+            groundtruth_concepts,            # ground truth concepts
+            intervention_policy,             # e.g. ucp
+            verbose=verbose
+        )
+
+    # After done up to max_interventions forward -> intervene cycles,
+    # concepts is the final realigned concept vector for each sample.
+    return concepts
+
