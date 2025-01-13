@@ -19,7 +19,7 @@ config = {
     # Training Parameters
     'learning_rate': 0.0001,            # Learning rate for optimizer
     'weight_decay': 1e-5,               # Weight decay (L2 regularization)
-    'batch_size': 64,                   # Batch size for training
+    'batch_size': 128,                   # Batch size for training
     'epochs': 100,                        # Number of training epochs
     'max_interventions': 10,            # Maximum number of interventions per trajectory
 

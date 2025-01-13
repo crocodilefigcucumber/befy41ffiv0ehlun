@@ -23,9 +23,9 @@ grid = list(itertools.product(GRID_SEARCH_PARAMS["hidden_size"], GRID_SEARCH_PAR
 
 def CV(config, grid):
     # Initialize CSV with headers if file doesn't exist
-    results_csv = f"trained_models/{config["dataset"]}/{config["model_type"]}/results.csv"
+    results_csv = f"trained_models/{config['dataset']}/{config['model']}/results.csv"
     if not os.path.exists(results_csv):
-        with open(results, mode="w", newline="") as file:
+        with open(results_csv, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["run_idx", "hidden_size", "hidden_layers", "val_loss"])
 
@@ -130,6 +130,7 @@ def CV(config, grid):
         else:
             print("No adapter path provided. Skipping adapter loading.")
         
+        val_loss = None
         # Train the model if not Baseline
         if config['model'] != 'Baseline':
             val_loss = train_model(concept_corrector, train_loader, val_loader, device, config, concept_to_cluster, adapter, run_idx)
@@ -164,9 +165,11 @@ def CV(config, grid):
 # Main Function
 # =========================
 def main():
-    config = default_config.copy()
-    config["epochs"] = 10
-    CV(config,grid)
+    model_types = ['Baseline', 'LSTM', 'MultiLSTM', 'GRU', 'RNN', 'MultiGRU', 'MultiRNN']
+    for model in model_types:
+        config = default_config.copy()
+        config["model"] = model
+        CV(config,grid)
 
 if __name__ == '__main__':
     main()
