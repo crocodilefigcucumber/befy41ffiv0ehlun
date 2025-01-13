@@ -51,7 +51,7 @@ def train_model(
     final_model_path = os.path.join(trained_models_dir, final_model_filename)
     
     # Save the config dictionary as config.json
-    config_save_path = os.path.join(trained_models_dir, 'config.json')
+    config_save_path = os.path.join(trained_models_dir, f'run_{run_idx}_config.json')
     with open(config_save_path, 'w') as f:
         json.dump(config, f, indent=4)
     
