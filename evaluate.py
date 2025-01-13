@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 # Evaluate model
 def evaluate_model(model, test_dataloader, split="test", device='cuda'):
@@ -9,6 +10,8 @@ def evaluate_model(model, test_dataloader, split="test", device='cuda'):
     concept_total = 0
     concept_predictions = []
     label_predictions = []
+    concept_goldens = []
+    label_goldens = []
 
     with torch.no_grad():
         for images, concepts, labels in test_dataloader:
@@ -17,13 +20,19 @@ def evaluate_model(model, test_dataloader, split="test", device='cuda'):
             labels = labels.to(device)
 
             predicted_labels, predicted_concepts = model(images, return_concepts=True)
+            
             _, predicted = torch.max(predicted_labels.data, 1)
             label_predictions.append(predicted_labels.numpy())
+            #print(labels)
+            reshaped_labels = labels.numpy().reshape(-1,1)
+            #print("Shape = %s" % reshaped_labels.shape)
+            label_goldens.append(reshaped_labels)
             val_total += labels.size(0)
             val_acc += (predicted == labels).sum().item()
             concept_total += concepts.size(0) * concepts.size(1)
             preds = (predicted_concepts > 0.5).float()  # Need to threshold sigmoid outputs
             concept_predictions.append(predicted_concepts.numpy())
+            concept_goldens.append(concepts.numpy())
             concept_acc += (preds == concepts).float().sum()
 
     val_acc = 100 * val_acc / val_total
@@ -34,4 +43,4 @@ def evaluate_model(model, test_dataloader, split="test", device='cuda'):
     if split != "test":
         print(f"Warning, evaluating predictions on {split}, "
                "be careful if using for downstream applications.")
-    return val_acc, concept_acc, label_predictions, concept_predictions
+    return val_acc, concept_acc, label_predictions, concept_predictions, label_goldens, concept_goldens
