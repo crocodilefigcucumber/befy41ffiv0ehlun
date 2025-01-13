@@ -234,7 +234,7 @@ if __name__ == "__main__":
             for concepts, ground_truth, labels in test_loader:
                 concepts = concepts.to(device)
                 labels = labels.to(device)
-                ground_truth.to(device)
+                ground_truth = ground_truth.to(device)
                 labels = labels.squeeze()
 
                 # ->RealignmentNetwork->...
@@ -249,7 +249,9 @@ if __name__ == "__main__":
                     verbose=False,
                 )
                 # ->ClassPredictor
-                predicted_labels = class_predictor(realigned_concepts)
+                #predicted_labels = class_predictor(realigned_concepts)
+                predicted_labels = class_predictor(ground_truth)
+
                 _, predicted = torch.max(predicted_labels.data, 1)
 
                 print(
