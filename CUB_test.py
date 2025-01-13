@@ -101,7 +101,6 @@ if __name__ == "__main__":
     # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
     NETWORKS = os.listdir(REALIGNMENT_PATH)
-    NETWORKS = [network for network in NETWORKS if network != "Baseline"] # we will handle the Baseline model seperately
     for network in NETWORKS:
         # =========================
         # Load Realignment Network
@@ -249,6 +248,3 @@ if __name__ == "__main__":
         with open(RESULTS_CSV, mode="a", newline="") as file:  # open in append mode
             writer = csv.writer(file)
             writer.writerow([model_type, test_loss, test_acc])
-    
-    network = "Baseline"
-    
