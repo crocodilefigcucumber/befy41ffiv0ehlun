@@ -1,14 +1,10 @@
 import torch
-from torch import nn
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
-import torch.nn.functional as F
 
-import multiprocessing as mp
 import os
 import json
-import pickle
 import csv
 
 from models import model
@@ -35,10 +31,10 @@ REALIGNMENT_PATH = "trained_models/CUB"
 PRECOMPUTED_PATH = "data/cub/output/cub_prediction_matrices.npz"
 RESULTS_CSV = "results/CUB/test.csv"
 
-if not os.path.exists(RESULTS_CSV):
-    with open(RESULTS_CSV, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["model_type", "test_acc"])
+
+with open(RESULTS_CSV, mode="w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(["model_type", "test_acc"])
 
 assert os.path.exists(PRECOMPUTED_PATH), (
     f"Error: Required file '{PRECOMPUTED_PATH}' not found. "
@@ -57,7 +53,7 @@ if __name__ == "__main__":
     # =========================
     # Load CBM
     # =========================
-    cub_model_path = "models/cub_model_20250112_210439.pth"
+    cub_model_path = "models/cub_model_20250113_212453.pth" #"models/cub_model_20250112_210439.pth"
     num_concepts = 312
     num_classes = 200
 
