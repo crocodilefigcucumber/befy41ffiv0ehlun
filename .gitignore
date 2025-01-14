@@ -112,10 +112,18 @@ data/cub/CUB_200_2011/*
 logs/*
 
 # trained models
-trained_models/CUB/Baseline/*
-trained_models/CUB/GRU/*
-trained_models/CUB/LSTM/*
-trained_models/CUB/MultiGRU/*
-trained_models/CUB/MultiLSTM/*
-trained_models/CUB/MultiRNN/*
-trained_models/CUB/RNN/*
+trained_models/CUB/Baseline/*.json
+trained_models/CUB/GRU/*.json
+trained_models/CUB/LSTM/*.json
+trained_models/CUB/MultiGRU/*.json
+trained_models/CUB/MultiLSTM/*.json
+trained_models/CUB/MultiRNN/*.json
+trained_models/CUB/RNN/*.json
+
+trained_models/CUB/Baseline/*.pth
+trained_models/CUB/GRU/*.pth
+trained_models/CUB/LSTM/*.pth
+trained_models/CUB/MultiGRU/*.pth
+trained_models/CUB/MultiLSTM/*.pth
+trained_models/CUB/MultiRNN/*.pth
+trained_models/CUB/RNN/*.pth
