@@ -110,3 +110,6 @@ data/cub/CUB_200_2011/*
 
 #for logs
 logs/*
+
+# trained models
+trained_models/*
