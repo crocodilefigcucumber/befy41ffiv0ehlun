@@ -204,7 +204,8 @@ def CV(config, grid):
                 ]
             )
         print(f"Appended results to {results_csv} for run {run_idx}.")
-
+        del concept_corrector
+        torch.cuda.empty_cache()
 
 # =========================
 # Main Function
@@ -237,6 +238,8 @@ def main():
     for model in selected_models:
         config = default_config.copy()
         config["model"] = model
+        if model.find("Multi") != -1:
+            config["epochs"] = config["epochs"] // 2 # MultiModels take long to train
         CV(config, grid)
 
 
