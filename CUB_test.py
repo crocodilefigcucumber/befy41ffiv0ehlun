@@ -95,6 +95,7 @@ if __name__ == "__main__":
     # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
     NETWORKS = os.listdir(REALIGNMENT_PATH)
+    NETWORKS = [network for network in NETWORKS if network != "GRU"]
     for network in NETWORKS:
         # =========================
         # Load Realignment Network

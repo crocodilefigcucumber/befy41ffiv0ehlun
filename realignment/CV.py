@@ -20,7 +20,7 @@ from eval import evaluate_baseline
 from data_loader import load_data, create_dataloaders, CustomDataset
 import csv
 
-GRID_SEARCH_PARAMS = {"hidden_size": [64, 128, 256, 512], "hidden_layers": [1, 3, 5, 7]}
+GRID_SEARCH_PARAMS = {"hidden_size": [2048, 4096], "hidden_layers": [1,2]}
 grid = list(
     itertools.product(
         GRID_SEARCH_PARAMS["hidden_size"], GRID_SEARCH_PARAMS["hidden_layers"]
