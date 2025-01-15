@@ -77,6 +77,7 @@ To train/test the realignment networks, it is easiest to call the `sbatch` comma
 ```
 
 ### Maximum Number of Interventions
+To iterate over the maximum number of interventions, `sbatch` jobscripts are also provided:
 ```bash
   sbatch jobscript_maxinter         # Train realignment networks on CUB dataset with maximum number of interventions iteration
   sbatch jobscript_test_maxinter    # Test the aforementioned networks
