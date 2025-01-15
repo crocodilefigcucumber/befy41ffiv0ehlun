@@ -11,6 +11,11 @@
 
 ---
 
+## Report
+The corresonding report can be found in the root directory of this repository: `Final_Report_Semantic_CBM.pdf`.
+
+---
+
 ## Datasets
 This project uses the following three datasets:
 - [CUB (Birds dataset)](https://paperswithcode.com/dataset/cub-200-2011)  
@@ -51,39 +56,3 @@ pandas == 2.2.2
 torch == 2.5.1+cu121
 requests == 2.32.3
 tqdm == 4.67.1
-```
-Afterwards, to save intermediate results, please run `load_cub_model.py`.
-### Euler Cluster Usage
-All following scripts may be run on the Euler cluster of ETHZ after having loaded the correct libraries:
-```bash
-  module purge
-  module load stack/.2024-06-silent  gcc/12.2.0 python_cuda/3.11.6
-```
-### Clustering
-To cluster data, run:
-
-```bash
-  experiments/{DATASET}_clusters.py
-```
-
-> **Note**  
-> : In addition, one needs to install the `clustpy` package to run this clustering script.
-
-### Training and Testing the Realignment Networks
-To train/test the realignment networks, it is easiest to call the `sbatch` command on SLURM (all libraries get loaded automatically, along with log files):
-```bash
-  sbatch jobscript_cv_parallelized   # Train realignment networks on CUB dataset
-  sbatch jobscript_test             # Test realignment networks on CUB dataset
-```
-> **Note**  
-> In order to run properly, wait until every job has completed
-
-### Maximum Number of Interventions
-To iterate over the maximum number of interventions, `sbatch` jobscripts are also provided:
-```bash
-  sbatch jobscript_maxinter         # Train realignment networks on CUB dataset with maximum number of interventions iteration
-  sbatch jobscript_test_maxinter    # Test the aforementioned networks
-  python3 realignment/maxinter_visualize.py  # Visualize the results
-```
-> **Note**  
-> In order to run properly, wait until every job has completed
