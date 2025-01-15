@@ -27,7 +27,13 @@ Note: The AWA2 Dataset `AwA2-data.zip` is ~14Gb compressed.
 
 
 # How to run
+To reproduce our results the following steps need to be taken:
+1. Download Data
+2. Cluster Data
+3. Train Models
+4. Perform Final visualizations
 
+---
 The training of the CBM architecture has been performed on Google Collab with the following packages installed:
 ```
 Python 3.10.12 (main, Nov  6 2024, 20:22:13) [GCC 11.4.0]
@@ -42,11 +48,12 @@ To train the CBM, run `notebooks/ConceptBottleneckBirds.ipynb`.
 ---
 All following scripts may be run on the Euler cluster of ETHZ after having loaded the correct libraries:
 ```bash
-  
+  module purge
+  module load stack/.2024-06-silent  gcc/12.2.0 python_cuda/3.11.6
 ```
-For clustering, run `experiments/{DATASET}_clusters.py`. Note that one needs to install the `clustpy` packages to run clustering.
+For clustering, run `experiments/{DATASET}_clusters.py`. Note that in addition, one needs to install `clustpy` package to run.
 
-To train/test the realignment networks, it is easiest to call the `sbatch` command on SLURM:
+To train/test the realignment networks, it is easiest to call the `sbatch` command on SLURM, all libraries get loaded automatically, and so do log files:
 ```bash
   sbatch jobscript_cv_parallelized # train realignment networks on CUB dataset
   sbatch jobscript_test # test realignment networks on CUB dataset
