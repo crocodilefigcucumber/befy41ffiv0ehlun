@@ -4,10 +4,10 @@
 ---
 
 ## Contributors
-- Michał Mikuta (19-948-124)  
-- Mikael Makonnen (23-950-900)  
-- Sari Issa (18-745-273)  
-- Max Buckley (22-906-853)
+- Michał Mikuta 
+- Mikael Makonnen  
+- Sari Issa
+- Max Buckley
 
 ---
 
