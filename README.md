@@ -75,6 +75,8 @@ To train/test the realignment networks, it is easiest to call the `sbatch` comma
   sbatch jobscript_cv_parallelized   # Train realignment networks on CUB dataset
   sbatch jobscript_test             # Test realignment networks on CUB dataset
 ```
+> **Note**  
+> In order to run properly, wait until every job has completed
 
 ### Maximum Number of Interventions
 To iterate over the maximum number of interventions, `sbatch` jobscripts are also provided:
@@ -83,3 +85,5 @@ To iterate over the maximum number of interventions, `sbatch` jobscripts are als
   sbatch jobscript_test_maxinter    # Test the aforementioned networks
   python3 realignment/maxinter_visualize.py  # Visualize the results
 ```
+> **Note**  
+> In order to run properly, wait until every job has completed
