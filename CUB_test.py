@@ -53,7 +53,9 @@ if __name__ == "__main__":
     # =========================
     # Load CBM
     # =========================
-    cub_model_path = "models/cub_model_20250113_212453.pth" #"models/cub_model_20250112_210439.pth"
+    cub_model_path = (
+        "models/cub_model_20250113_212453.pth"  # "models/cub_model_20250112_210439.pth"
+    )
     num_concepts = 312
     num_classes = 200
 
@@ -95,6 +97,8 @@ if __name__ == "__main__":
     # Test Full Pipeline X->ConceptEncoder->RealignmentNetwork->ClassPredictor
     # =========================
     NETWORKS = os.listdir(REALIGNMENT_PATH)
+    NETWORKS = [network for network in NETWORKS if "maxinter_" not in network]
+
     for network in NETWORKS:
         # =========================
         # Load Realignment Network

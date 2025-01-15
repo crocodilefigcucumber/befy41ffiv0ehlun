@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import os
 import json
-import itertools
 import argparse
 
 from config import config as default_config
@@ -20,21 +19,21 @@ from eval import evaluate_baseline
 from data_loader import load_data, create_dataloaders, CustomDataset
 import csv
 
-ITERATION_PARAMS = {"max_interventions": [5,10,15,20]}
-
+ITERATION_PARAMS = {"max_interventions": [1, 5, 10, 15]}
 
 
 def train_and_write(config, grid):
     # Initialize CSV with headers
-    results_csv = f"trained_models/{config['dataset']}/{config['model']}/maxinter_results.csv"
+    results_csv = (
+        f"trained_models/{config['dataset']}/maxinter_{config['model']}/results.csv"
+    )
     with open(results_csv, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["run_idx", "hidden_size", "hidden_layers", "val_loss"])
+        writer.writerow(["run_idx", "max_interventions", "val_loss"])
 
-    for run_idx, (hidden_size, hidden_layers) in enumerate(grid):
+    for run_idx, max_interventions in enumerate(grid):
         # Update configuration with current hyperparameters
-        config["hidden_size"] = hidden_size
-        config["num_layers"] = hidden_layers
+        config["max_interventions"] = max_interventions
 
         device = config["device"]
         print(f"Using device: {device}")
@@ -153,9 +152,12 @@ def train_and_write(config, grid):
                 concept_to_cluster,
                 adapter,
                 run_idx,
+                dir_prefix="maxinter_",
             )
         else:
-            baseline_dir = os.path.join("trained_models", config["dataset"], "Baseline")
+            baseline_dir = os.path.join(
+                "trained_models", config["dataset"], "maxinter_" + "Baseline"
+            )
             os.makedirs(baseline_dir, exist_ok=True)
             config_save_path = os.path.join(baseline_dir, f"run_{run_idx}_config.json")
             with open(config_save_path, "w") as f:
@@ -194,8 +196,7 @@ def train_and_write(config, grid):
             writer.writerow(
                 [
                     run_idx,
-                    config["hidden_size"],
-                    config["num_layers"],
+                    config["max_interventions"],
                     val_loss if val_loss is not None else "N/A",
                 ]
             )
@@ -203,27 +204,21 @@ def train_and_write(config, grid):
         del concept_corrector
         torch.cuda.empty_cache()
 
+
 # =========================
 # Main Function
 # =========================
 def main():
-    model_types = [
-        "Baseline",
-        "LSTM",
-        "MultiLSTM",
-        "GRU",
-        "RNN",
-        "MultiGRU",
-        "MultiRNN",
-    ]
-    
+    # trains models for maxintervention plot
+    model_types = ["RNN", "MultiRNN", "Baseline"]
+
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Run CV for different model types.")
     parser.add_argument(
         "--model",
         type=str,
         choices=model_types,
-        help=f"Specify a model type from the list: {', '.join(model_types)}. If not provided, all models will be run."
+        help=f"Specify a model type from the list: {', '.join(model_types)}. If not provided, all models will be run.",
     )
     args = parser.parse_args()
 
@@ -233,10 +228,14 @@ def main():
     # Loop over selected models
     for model in selected_models:
         config = default_config.copy()
+
         config["model"] = model
+        config["hidden_size"] = 2048
+        config["num_layers"] = 1
+
         if model.find("Multi") != -1:
-            config["epochs"] = config["epochs"] // 2 # MultiModels take long to train
-        CV(config, grid)
+            config["epochs"] = config["epochs"] // 2  # MultiModels take long to train
+        train_and_write(config, ITERATION_PARAMS["max_interventions"])
 
 
 if __name__ == "__main__":

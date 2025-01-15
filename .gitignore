@@ -127,3 +127,20 @@ trained_models/CUB/MultiGRU/*.pth
 trained_models/CUB/MultiLSTM/*.pth
 trained_models/CUB/MultiRNN/*.pth
 trained_models/CUB/RNN/*.pth
+
+# for maxinter visualization
+trained_models/CUB/maxinter_Baseline/*.json
+trained_models/CUB/maxinter_GRU/*.json
+trained_models/CUB/maxinter_LSTM/*.json
+trained_models/CUB/maxinter_MultiGRU/*.json
+trained_models/CUB/maxinter_MultiLSTM/*.json
+trained_models/CUB/maxinter_MultiRNN/*.json
+trained_models/CUB/maxinter_RNN/*.json
+
+trained_models/CUB/maxinter_Baseline/*.pth
+trained_models/CUB/maxinter_GRU/*.pth
+trained_models/CUB/maxinter_LSTM/*.pth
+trained_models/CUB/maxinter_MultiGRU/*.pth
+trained_models/CUB/maxinter_MultiLSTM/*.pth
+trained_models/CUB/maxinter_MultiRNN/*.pth
+trained_models/CUB/maxinter_RNN/*.pth

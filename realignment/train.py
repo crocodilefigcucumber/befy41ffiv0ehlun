@@ -25,7 +25,8 @@ def train_model(
     config: dict,
     concept_to_cluster: list,
     adapter: nn.Module=None, 
-    run_idx=0
+    run_idx=0,
+    dir_prefix=""
 ):
     optimizer = optim.Adam(
         concept_corrector.parameters(),
@@ -45,7 +46,7 @@ def train_model(
     val_losses = []
 
     # model saving
-    trained_models_dir = os.path.join('trained_models', config['dataset'], config['model'])
+    trained_models_dir = os.path.join('trained_models', config['dataset'], dir_prefix+config['model'])
     os.makedirs(trained_models_dir, exist_ok=True)
     final_model_filename = f"run_{run_idx}_best_model.pth"
     final_model_path = os.path.join(trained_models_dir, final_model_filename)
