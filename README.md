@@ -51,7 +51,7 @@ pandas == 2.2.2
 torch == 2.5.1+cu121
 requests == 2.32.3
 tqdm == 4.67.1
-'''
+```
 
 ### Euler Cluster Usage
 All following scripts may be run on the Euler cluster of ETHZ after having loaded the correct libraries:
