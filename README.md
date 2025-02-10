@@ -10,11 +10,6 @@
 
 ---
 
-## Report
-The corresonding report can be found in the root directory of this repository: `Final_Report_Semantic_CBM.pdf`.
-
----
-
 ## Datasets
 This project uses the following three datasets:
 - [CUB (Birds dataset)](https://paperswithcode.com/dataset/cub-200-2011)  
