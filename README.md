@@ -1,5 +1,4 @@
 # Semantics-Informed Group Interventions for Concept Bottleneck Models
-**An ETH Project for the [Deep Learning](https://da.inf.ethz.ch/teaching/2024/DeepLearning/) module in 2024.**
 
 ---
 
